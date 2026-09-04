@@ -6,20 +6,27 @@ title: "About Me"
 
 <!-- CHANGE THIS -->
 
-Write a few paragraphs about yourself here: where you came from before MUSA,
-what drew you to urban spatial analytics, and what you're hoping to do with it.
+I come from Hangzhou, Zhejiang, in China — a picturesque city with friendly
+people, many excellent dessert shops, and streets that are especially friendly
+to cyclists. What I love most is riding my road bike through the city and
+feeling its pulse as I go.
+
+That's what drew me to urban spatial analytics. A city is a complex system,
+and I want to understand it better — how its pieces fit together, move, and
+interact. This program is my way of learning to read the city I've been
+riding through all along.
 
 ## Skills
 
 <!-- CHANGE THIS: update this through the semester as it becomes true -->
 
-- **Languages & Tools:** R, Quarto, Git
-- **Spatial:** (add as you learn)
+- **Languages & Tools:** R, Quarto, Git, C, Python
+- **Spatial:** ArcGIS
 - **Data:** US Census / ACS via `tidycensus`
 
 ## Contact
 
 <!-- CHANGE THIS -->
 
-- Email: your-email@upenn.edu
-- GitHub: [@your-username](https://github.com/your-username)
+- Email: qiwenb@upenn.edu
+- GitHub: [@rowen37](https://github.com/your-username)

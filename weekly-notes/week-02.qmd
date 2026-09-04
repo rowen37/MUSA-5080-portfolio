@@ -1,0 +1,25 @@
+---
+title: "Week 1: Getting Set Up"
+description: "First impressions, and getting the workflow running."
+date: 2026-08-28
+---
+
+## What We Did
+
+Had a quiz,setuo portfolio notes for today, had a lesson about dplyr and the census, and had practice. 
+
+## Key Concepts
+
+
+The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
+
+
+```{r}
+sessionInfo()$R.version$version.string
+```
+
+## Reflection
+
+
+
+## Questions I Still Have

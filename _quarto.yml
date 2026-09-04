@@ -4,7 +4,7 @@ project:
   execute-dir: project
 
 website:
-  title: "qiwenb - MUSA 5080 Portfolio"        # <-- CHANGE THIS
+  title: "Qiwen Bian - MUSA 5080 Portfolio"        # <-- CHANGE THIS
   description: "Public Policy Analytics portfolio"
   navbar:
     title: "Portfolio"

@@ -36,12 +36,11 @@ urban data into analyses that support real policy decisions — especially
 working with Census data in R and building a public portfolio I can show to
 employers.
 
-**One thing I'm nervous about:** the whole toolchain (R, Quarto, Git) is new
-to me, and I'm worried about breaking something I don't understand when a
+**One thing I'm nervous about:** some part of the toolchain (Quarto, Git) is 
+new to me, and I'm worried about breaking something I don't understand when a
 push doesn't look the way I expected. My plan is to just run the loop every
 week until it feels normal.
 
 ## Questions I Still Have
 
--
--
+- not yet
