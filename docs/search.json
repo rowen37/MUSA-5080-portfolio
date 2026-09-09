@@ -81,7 +81,7 @@
     "href": "assignments/index.html",
     "title": "Assignments",
     "section": "",
-    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\nNo matching items"
+    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nAssignment 2: Who Do We Know the Least About?\n\n\n\n\n\n\n\n\nSep 9, 2026\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "about.html",
@@ -116,6 +116,111 @@
     "href": "weekly-notes/index.html",
     "title": "Weekly Notes",
     "section": "",
-    "text": "Notes from each week of MUSA 5080. New entries appear here automatically — add a .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nWeek 1: Getting Set Up\n\n\nFirst impressions, and getting the workflow running.\n\n\n\n\n\nAug 28, 2026\n\n\n\n\n\nNo matching items"
+    "text": "Notes from each week of MUSA 5080. New entries appear here automatically — add a .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nWeek 2: Census data mining\n\n\nRetrieve ACS data with tidycensus, summarize using dplyr.\n\n\n\n\n\nSep 4, 2026\n\n\n\n\n\n\n\nWeek 1: Getting Set Up\n\n\nFirst impressions, and getting the workflow running.\n\n\n\n\n\nAug 28, 2026\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "assignments/assignment2.html",
+    "href": "assignments/assignment2.html",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "",
+    "text": "library(tidyverse)\nlibrary(tidycensus)"
+  },
+  {
+    "objectID": "assignments/assignment2.html#setup",
+    "href": "assignments/assignment2.html#setup",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "",
+    "text": "library(tidyverse)\nlibrary(tidycensus)"
+  },
+  {
+    "objectID": "assignments/assignment2.html#the-question",
+    "href": "assignments/assignment2.html#the-question",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "The question",
+    "text": "The question\nFor Illinois, I’ve chosen to examine median home value (variable B25077_001). Housing markets vary dramatically across the state, from Chicago’s urban core to rural farming counties, but ACS estimates in sparsely populated areas often come with wider margins of error. I want to assess not only where property values are highest, but also which counties’ estimates are statistically reliable enough to inform housing policy or investment decisions."
+  },
+  {
+    "objectID": "assignments/assignment2.html#choosing-what-to-measure",
+    "href": "assignments/assignment2.html#choosing-what-to-measure",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "Choosing what to measure",
+    "text": "Choosing what to measure\n\nmy_state &lt;- \"IL\"        # two-letter abbreviation, in quotes\nmy_variable &lt;- \"B25077_001\"     # the variable code, in quotes"
+  },
+  {
+    "objectID": "assignments/assignment2.html#pulling-the-data",
+    "href": "assignments/assignment2.html#pulling-the-data",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "Pulling the data",
+    "text": "Pulling the data\n\ncounty_data &lt;- get_acs(\n  geography = \"county\",\n  variables = my_variable,\n  state = my_state,\n  year = 2023,\n  survey = \"acs5\"\n)\n\nLet’s look at what came back.\n\ndim(county_data)\n\n[1] 102   5\n\nhead(county_data)\n\n# A tibble: 6 × 5\n  GEOID NAME                       variable   estimate   moe\n  &lt;chr&gt; &lt;chr&gt;                      &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;\n1 17001 Adams County, Illinois     B25077_001   155900  4554\n2 17003 Alexander County, Illinois B25077_001    58700 10578\n3 17005 Bond County, Illinois      B25077_001   133100 13683\n4 17007 Boone County, Illinois     B25077_001   198600  8350\n5 17009 Brown County, Illinois     B25077_001   142200 19435\n6 17011 Bureau County, Illinois    B25077_001   121900  3733\n\n\nIllinois holds 102 counties."
+  },
+  {
+    "objectID": "assignments/assignment2.html#how-big-is-the-margin-of-error",
+    "href": "assignments/assignment2.html#how-big-is-the-margin-of-error",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "How big is the margin of error?",
+    "text": "How big is the margin of error?\nA margin of error of 3,000 means something very different for an estimate of 20,000 than for an estimate of 200,000. To compare across places, we need it as a percentage.\n\ncounty_data &lt;- county_data %&gt;%\n  mutate(moe_pct = moe / estimate * 100)\n\nNow sort to see which counties are measured least reliably.\n\ncounty_data %&gt;%\n  arrange(desc(moe_pct)) %&gt;%\n  select(NAME, estimate, moe, moe_pct) %&gt;%\n  head(10)\n\n# A tibble: 10 × 4\n   NAME                       estimate   moe moe_pct\n   &lt;chr&gt;                         &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;\n 1 Hardin County, Illinois       91700 31269    34.1\n 2 Alexander County, Illinois    58700 10578    18.0\n 3 Jasper County, Illinois      122900 17070    13.9\n 4 Hamilton County, Illinois    108800 15103    13.9\n 5 Brown County, Illinois       142200 19435    13.7\n 6 Calhoun County, Illinois     174000 21433    12.3\n 7 Pulaski County, Illinois      81000  9539    11.8\n 8 Massac County, Illinois      118000 13228    11.2\n 9 Scott County, Illinois       101700 11145    11.0\n10 Bond County, Illinois        133100 13683    10.3\n\n\nHardin County has the largest margin of error relative to its estimate (34.10%) in Illinois, which is the least reliable"
+  },
+  {
+    "objectID": "assignments/assignment2.html#sorting-counties-into-reliability-categories",
+    "href": "assignments/assignment2.html#sorting-counties-into-reliability-categories",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "Sorting counties into reliability categories",
+    "text": "Sorting counties into reliability categories\n\ncounty_data &lt;- county_data %&gt;%\n  mutate(reliability = case_when(\n    moe_pct &lt; 3  ~ \"High confidence\",\n    moe_pct &lt; 7 ~ \"Moderate\",\n    TRUE         ~ \"Low confidence\"\n  ))\n\ncount(county_data, reliability)\n\n# A tibble: 3 × 2\n  reliability         n\n  &lt;chr&gt;           &lt;int&gt;\n1 High confidence    21\n2 Low confidence     27\n3 Moderate           54\n\n\nBased on the summary statistics, since the median is 5.27% and the 3rd quartile is 7.09%, the original 3%/6% thresholds would put most counties in “Moderate” or “Low”. As a result, 21 counties are classified as “High confidence”, 54 as “Moderate” and 27 as “Low confidence”."
+  },
+  {
+    "objectID": "assignments/assignment2.html#is-the-margin-of-error-bigger-in-small-places",
+    "href": "assignments/assignment2.html#is-the-margin-of-error-bigger-in-small-places",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "Is the margin of error bigger in small places?",
+    "text": "Is the margin of error bigger in small places?\nTo answer this we need population and our variable side by side, in the same row. That means a wide pull.\n\ncounty_wide &lt;- get_acs(\n  geography = \"county\",\n  variables = c(myvar = my_variable,\n                pop   = \"B01003_001\"),\n  state = my_state,\n  year = 2023,\n  survey = \"acs5\",\n  output = \"wide\"\n)\n\nhead(county_wide)\n\n# A tibble: 6 × 6\n  GEOID NAME                       myvarE myvarM  popE  popM\n  &lt;chr&gt; &lt;chr&gt;                       &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n1 17001 Adams County, Illinois     155900   4554 65166    NA\n2 17003 Alexander County, Illinois  58700  10578  5042    NA\n3 17005 Bond County, Illinois      133100  13683 16627    NA\n4 17007 Boone County, Illinois     198600   8350 53316    NA\n5 17009 Brown County, Illinois     142200  19435  6320    NA\n6 17011 Bureau County, Illinois    121900   3733 33027    NA\n\n\n\ncounty_wide &lt;- county_wide %&gt;%\n  mutate(moe_pct = myvarM / myvarE * 100) %&gt;%\n  mutate(reliability = case_when(\n    moe_pct &lt; 3  ~ \"High confidence\",\n    moe_pct &lt; 7 ~ \"Moderate\",\n    TRUE         ~ \"Low confidence\"\n  ))\n\nNow compare the average population of counties in each reliability category.\n\ncounty_wide %&gt;%\n  group_by(reliability) %&gt;%\n  summarize(\n    n_counties = n(),\n    avg_population = mean(popE)\n  )\n\n# A tibble: 3 × 3\n  reliability     n_counties avg_population\n  &lt;chr&gt;                &lt;int&gt;          &lt;dbl&gt;\n1 High confidence         21        514207.\n2 Low confidence          27         11301.\n3 Moderate                54         29429.\n\n\nHigh confidence counties have an average population 45 times larger than Low confidence counties (514,207 vs 11,301), confirming that smaller counties yield less reliable ACS estimates. While 53% of counties are moderately reliable, the 27 Low confidence counties—all sparsely populated—would be risky to use for targeted policy decisions without additional data collection."
+  },
+  {
+    "objectID": "assignments/assignment2.html#what-this-means-for-policy",
+    "href": "assignments/assignment2.html#what-this-means-for-policy",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "What this means for policy",
+    "text": "What this means for policy\nWhat: The communities we know the least about in Illinois are its smallest, most rural counties. From my analysis, the 27 Low confidence counties—which include sparsely populated areas like Hardin, Pope, Calhoun, and Gallatin counties—have an average population of just 11,301 residents. These are precisely the places where ACS estimates are most unreliable, yet they represent a significant portion of Illinois’s geographic area.\nWhy: The survey is sample‑based, not a census, and reliability depends heavily on sample size. Smaller counties contribute fewer respondents, which produces wider margins of error around every estimate. The ACS’s own design prioritizes precision for larger populations, leaving rural communities with statistically noisy data.\nWho: If a state agency distributing housing grants based on median home values, treating every county’s estimate as equally certain. Using the 27 Low confidence counties’ numbers at face value could misdirect funds—a county with an artificially high estimate might receive less aid than it actually needs, while another with a low estimate might be overlooked despite hidden poverty. The rural poor, already underserved, would be the ones hurt most."
+  },
+  {
+    "objectID": "assignments/assignment2.html#optional-challenge-one-function-five-states",
+    "href": "assignments/assignment2.html#optional-challenge-one-function-five-states",
+    "title": "Assignment 2: Who Do We Know the Least About?",
+    "section": "Optional challenge: one function, five states",
+    "text": "Optional challenge: one function, five states\nThe county-level pull earlier in this report is hard-coded to one state. I wrapped it in a function, pull_county_reliability(), that takes a state abbreviation (plus optional variable and year) and returns each county’s estimate, margin of error, population, and moe_pct:\n\npull_county_reliability &lt;- function(state_abbr, variable = \"B25077_001\", year = 2023) {\n  get_acs(\n    geography = \"county\",\n    variables = c(myvar = variable, pop = \"B01003_001\"),\n    state = state_abbr,\n    year = year,\n    survey = \"acs5\",\n    output = \"wide\"\n  ) %&gt;%\n    transmute(\n      state = state_abbr,\n      GEOID,\n      NAME,\n      estimate = myvarE,\n      moe = myvarM,\n      popE,\n      moe_pct = myvarM / myvarE * 100\n    )\n}\n\nWith purrr::map_dfr() the same analysis runs across several states at once. I picked five with very different settlement geographies: Illinois, Ohio, Georgia, Montana, and Wyoming — 428 counties in total.\n\nstates &lt;- c(\"IL\", \"OH\", \"GA\", \"MT\", \"WY\")\n\nmulti_state &lt;- map_dfr(states, pull_county_reliability)\n\nmulti_state %&gt;%\n  mutate(reliability = case_when(\n    moe_pct &lt; 3  ~ \"High confidence\",\n    moe_pct &lt; 7  ~ \"Moderate\",\n    TRUE         ~ \"Low confidence\"\n  )) %&gt;%\n  group_by(state, reliability) %&gt;%\n  summarize(\n    n_counties = n(),\n    avg_population = mean(popE),\n    .groups = \"drop\"\n  )\n\n# A tibble: 15 × 4\n   state reliability     n_counties avg_population\n   &lt;chr&gt; &lt;chr&gt;                &lt;int&gt;          &lt;dbl&gt;\n 1 GA    High confidence         22        302228.\n 2 GA    Low confidence          93         16234.\n 3 GA    Moderate                44         60540.\n 4 IL    High confidence         21        514207.\n 5 IL    Low confidence          27         11301.\n 6 IL    Moderate                54         29429.\n 7 MT    High confidence          6        112466.\n 8 MT    Low confidence          40          6267.\n 9 MT    Moderate                10         17959.\n10 OH    High confidence         30        302595.\n11 OH    Low confidence          10         26528.\n12 OH    Moderate                48         50769.\n13 WY    High confidence          2         73840.\n14 WY    Low confidence           6          9072.\n15 WY    Moderate                15         25177.\n\n\nTo measure the small-places-are-noisier pattern directly, I correlated county population (log scale) with moe_pct within each state:\n\nmulti_state %&gt;%\n  group_by(state) %&gt;%\n  summarize(correlation = cor(log(popE), moe_pct))\n\n# A tibble: 5 × 2\n  state correlation\n  &lt;chr&gt;       &lt;dbl&gt;\n1 GA         -0.652\n2 IL         -0.677\n3 MT         -0.637\n4 OH         -0.669\n5 WY         -0.656\n\n\n\nggplot(multi_state, aes(popE, moe_pct, color = state)) +\n  geom_point(alpha = 0.7) +\n  geom_hline(yintercept = 7, linetype = \"dashed\", color = \"grey50\") +\n  scale_x_log10(labels = scales::label_comma()) +\n  labs(\n    title = \"Smaller counties, wider margins of error — in every state\",\n    x = \"County population (log scale)\",\n    y = \"Margin of error as % of estimate\",\n    color = \"State\"\n  )\n\n\n\n\n\n\n\n\nWhat I found: the small-places-are-noisier pattern holds everywhere. In all five states the correlation between population and moe_pct falls in a narrow band between -0.64 and -0.68, and the average High-confidence county is anywhere from 8× (Wyoming) to 45× (Illinois) more populous than the average Low-confidence county.\nWhat differs between states is how much of the state is affected. In Montana, 40 of 56 counties and in Georgia, 93 of 159 fall into Low confidence, while in Ohio only 10 of 88 do. The rule is universal, but its footprint depends on settlement geography: states dominated by small rural counties simply have less trustworthy home-value data overall than states of evenly mid-sized counties like Ohio."
+  },
+  {
+    "objectID": "weekly-notes/week-02.html",
+    "href": "weekly-notes/week-02.html",
+    "title": "Week 2: Census data mining",
+    "section": "",
+    "text": "Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA."
+  },
+  {
+    "objectID": "weekly-notes/week-02.html#what-we-did",
+    "href": "weekly-notes/week-02.html#what-we-did",
+    "title": "Week 2: Census data mining",
+    "section": "",
+    "text": "Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA."
+  },
+  {
+    "objectID": "weekly-notes/week-02.html#key-concepts",
+    "href": "weekly-notes/week-02.html#key-concepts",
+    "title": "Week 2: Census data mining",
+    "section": "Key Concepts",
+    "text": "Key Concepts\n\nCommon functions: filter(input data, arguments), arrange(step1, desc(moe_pct)), select(name, moe_pct), mutate(new_col = col1 / col2), group by(county)\nMagrittr pipe: %&gt;%\nThe loop: Edit → Save → Render → Commit → Push → wait → refresh\n\n\nsessionInfo()$R.version$version.string\n\n[1] \"R version 4.5.3 (2026-03-11)\""
+  },
+  {
+    "objectID": "weekly-notes/week-02.html#reflection",
+    "href": "weekly-notes/week-02.html#reflection",
+    "title": "Week 2: Census data mining",
+    "section": "Reflection",
+    "text": "Reflection\nThis practice strengthened my skills in retrieving ACS data with tidycensus and manipulating it using dplyr verbs: filter, select, mutate, arrange, and group_by/summarize. I computed relative margin of error (moe_pct), categorized reliability with case_when, and explored long‑to‑wide format conversion. A key caution was treating FIPS codes (GEOID) as characters to preserve leading zeros. The pipe workflow enabled a smooth data cleaning and exploration process, reinforcing a practical analytic workflow from acquisition to summarization."
+  },
+  {
+    "objectID": "weekly-notes/week-02.html#questions-i-still-have",
+    "href": "weekly-notes/week-02.html#questions-i-still-have",
+    "title": "Week 2: Census data mining",
+    "section": "Questions I Still Have",
+    "text": "Questions I Still Have\nHow can MOE help in Census data analysis, can we map it spatially to support policy decisions？"
   }
 ]

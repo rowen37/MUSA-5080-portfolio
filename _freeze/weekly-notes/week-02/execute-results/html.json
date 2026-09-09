@@ -1,0 +1,15 @@
+{
+  "hash": "94be50b76b2d4468f954a46f5335ca41",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Week 2: Census data mining\"\ndescription: \"Retrieve ACS data with tidycensus, summarize using dplyr.\"\ndate: 2026-09-04\n---\n\n## What We Did\n\nHad a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA. \n\n## Key Concepts\n1. Common functions:\n  filter(input data, arguments),\n  arrange(step1, desc(moe_pct)),\n  select(name, moe_pct),\n  mutate(new_col = col1 / col2), \n  group by(county)\n\n2. Magrittr pipe: %>%\n\n3. The loop: **Edit → Save → Render → Commit → Push → wait → refresh**\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nsessionInfo()$R.version$version.string\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\n[1] \"R version 4.5.3 (2026-03-11)\"\n```\n\n\n:::\n:::\n\n\n## Reflection\n\nThis practice strengthened my skills in retrieving ACS data with `tidycensus` and manipulating it using `dplyr` verbs: `filter`, `select`, `mutate`, `arrange`, and `group_by`/`summarize`. I computed relative margin of error (`moe_pct`), categorized reliability with `case_when`, and explored long‑to‑wide format conversion. A key caution was treating FIPS codes (`GEOID`) as characters to preserve leading zeros. The pipe workflow enabled a smooth data cleaning and exploration process, reinforcing a practical analytic workflow from acquisition to summarization. \n\n## Questions I Still Have\nHow can MOE help in Census data analysis, can we map it spatially to support policy decisions？\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
