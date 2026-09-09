@@ -1,17 +1,24 @@
 ---
-title: "Week 1: Getting Set Up"
-description: "First impressions, and getting the workflow running."
-date: 2026-08-28
+title: "Week 2: Census data mining"
+description: "Retrieve ACS data with tidycensus, summarize using dplyr."
+date: 2026-09-04
 ---
 
 ## What We Did
 
-Had a quiz,setuo portfolio notes for today, had a lesson about dplyr and the census, and had practice. 
+Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA. 
 
 ## Key Concepts
+1. Common functions:
+  filter(input data, arguments),
+  arrange(step1, desc(moe_pct)),
+  select(name, moe_pct),
+  mutate(new_col = col1 / col2), 
+  group by(county)
 
+2. Magrittr pipe: %>%
 
-The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
+3. The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
 
 
 ```{r}
@@ -20,6 +27,8 @@ sessionInfo()$R.version$version.string
 
 ## Reflection
 
-
+This practice strengthened my skills in retrieving ACS data with `tidycensus` and manipulating it using `dplyr` verbs: `filter`, `select`, `mutate`, `arrange`, and `group_by`/`summarize`. I computed relative margin of error (`moe_pct`), categorized reliability with `case_when`, and explored long‑to‑wide format conversion. A key caution was treating FIPS codes (`GEOID`) as characters to preserve leading zeros. The pipe workflow enabled a smooth data cleaning and exploration process, reinforcing a practical analytic workflow from acquisition to summarization. 
 
 ## Questions I Still Have
+How can MOE help in Census data analysis, can we map it spatially to support policy decisions？
+
