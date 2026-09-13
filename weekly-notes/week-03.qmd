@@ -1,0 +1,35 @@
+---
+title: "Week 3: ggplot and more MOEs"
+description: "Practice with tidycensus ACS county data: MOEs, reliability flags, ggplot2 error bars, derived uncertainty with moe_sum()/moe_prop(), and significance testing for change over time."
+date: 2026-09-11
+---
+
+## What We Did
+
+We got Census data in NY, calculated moe_pct and classified by confidence, plotted the data in different forms and decorated the plots.
+
+## Key Conceptpoint()
+key functions: 
+  ggplot(data): build a canvas, 
+    aes(reorder()): sort
+  aes(x, y): aesthetic mapping, no decorating, 
+  slice_head(n): get the first 15, 
+  geom_point(), geom_col(), geom_erroebar(aaes(ymin, xmin)): shape of chart,
+  str_remove(col, "xxx"): remove the unwanted word
+  labs(title): add axes title
+  coord_flip(): trans
+  
+
+```{r}
+sessionInfo()$R.version$version.string
+```
+
+## Reflection
+
+1. Learned more about the meaning of moe_pct and how it reflects the information.
+2. Using plot functions can make the plots more readable
+
+## Questions I Still Have
+
+How to precisely define the confidence threshold
+
