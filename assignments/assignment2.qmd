@@ -1,8 +1,8 @@
 ---
 title: "Assignment 2: Who Do We Know the Least About?"
 subtitle: "Measuring uncertainty in American Community Survey data"
-author: "qiwenb"
-date: today
+author: "Qiwen Bian"
+date: 2026-09-09
 format:
   html:
     toc: true

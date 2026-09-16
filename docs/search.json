@@ -81,7 +81,7 @@
     "href": "assignments/index.html",
     "title": "Assignments",
     "section": "",
-    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nAssignment 2: Who Do We Know the Least About?\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\n\n\nassignment-3\n\n\n\n\n\n\n\n\nSep 11, 2026\n\n\n\n\n\nNo matching items"
+    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nAssignment 2: Who Do We Know the Least About?\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\n\n\nassignment-3\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "about.html",
@@ -397,5 +397,12 @@
     "title": "assignment-3",
     "section": "3. Calculate the change and CV",
     "text": "3. Calculate the change and CV\nCalculate the change in poverty rate, the standard error of the difference, the difference MOE, the z-score, and whether the change is statistically detectable at the 90% confidence level. Calculate the coefficient of variation for each period and classify each estimate as reliable, somewhat reliable, or unreliable.\n\n\nShow code\npoverty_tested &lt;- poverty_wide %&gt;%\n  mutate(\n    change   = poverty_rate_2013_2017 -\n               poverty_rate_2006_2010,\n    se_1     = poverty_rate_moe_2006_2010 / 1.645,\n    se_2     = poverty_rate_moe_2013_2017 / 1.645,\n    se_diff  = sqrt(se_1^2 + se_2^2),\n    moe_diff = se_diff * 1.645,\n    z        = change / se_diff,\n    significant = abs(z) &gt; 1.645\n  )\n\npoverty_tested &lt;- poverty_tested %&gt;%\n  mutate(\n    cv_2006_2010 = se_1 / poverty_rate_2006_2010 * 100,\n    cv_2013_2017 = se_2 / poverty_rate_2013_2017 * 100,\n    reliability_2006_2010 = \n      case_when(\n        cv_2006_2010 &lt; 12 ~ \"reliable\",\n        cv_2006_2010 &lt;= 40 ~ \"somewhat reliable\",\n        TRUE ~ \"unreliable\"\n      ),\n    reliability_2013_2017 = \n      case_when(\n        cv_2013_2017 &lt; 12 ~ \"reliable\",\n        cv_2013_2017 &lt;= 40 ~ \"somewhat reliable\",\n        TRUE ~ \"unreliable\"\n      )\n  )"
+  },
+  {
+    "objectID": "assignments/assignment3.html#plot-the-change-in-poverty-rate-most-unreliable-15",
+    "href": "assignments/assignment3.html#plot-the-change-in-poverty-rate-most-unreliable-15",
+    "title": "assignment-3",
+    "section": "6. Plot the change in poverty rate (most unreliable 15)",
+    "text": "6. Plot the change in poverty rate (most unreliable 15)\nPlot the change in poverty rate across Philadelphia census tracts. Error bars show the 90% MOE of the change. Some tracts showed extreme MOE, and the x axis label is horrible!\n\n\nShow code\npoverty_plot &lt;- poverty_complete %&gt;%\n  mutate(\n    change_pp = change * 100,\n    moe_diff_pp = moe_diff * 100,\n    moe_pct = if_else(change == 0, Inf, moe_diff / abs(change) * 100),\n    NAME = str_remove(NAME, \"Census Tract \") %&gt;%\n      str_remove(\", Philadelphia County, Pennsylvania\")\n  ) %&gt;%\n  arrange(desc(moe_pct)) %&gt;%\n  slice_head(n = 15)\n\nggplot(\n  poverty_plot,\n  aes(x = reorder(NAME, change_pp), y = change_pp)\n) +\n  geom_col(aes(fill = change_pp &gt; 0)) +\n  geom_errorbar(\n    aes(ymin = change_pp - moe_diff_pp,\n        ymax = change_pp + moe_diff_pp),\n    width = 0.3\n  ) +\n  geom_hline(yintercept = 0, linetype = \"dashed\") +\n  theme_minimal() +\n  labs(\n    x = NULL,\n    y = \"Change in poverty rate (percentage points)\",\n    title = \"15 most unreliable poverty-rate changes\",\n    subtitle = \"2013–2017 ACS5 minus 2006–2010 ACS5; error bars show 90% MOE\"\n  )"
   }
 ]
