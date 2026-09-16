@@ -27,7 +27,7 @@ sessionInfo()$R.version$version.string
 ## Reflection
 
 1. Learned more about the meaning of moe_pct and how it reflects the information.
-2. Using plot functions can make the plots more readable
+2. Using plot functions can make the plots more readable.
 
 ## Questions I Still Have
 

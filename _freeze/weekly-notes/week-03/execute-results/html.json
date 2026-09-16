@@ -1,0 +1,15 @@
+{
+  "hash": "1717c27ab308f073c922a79b2feb24c6",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Week 3: ggplot and more MOEs\"\ndescription: \"Practice with tidycensus ACS county data: MOEs, reliability flags, ggplot2 error bars, derived uncertainty with moe_sum()/moe_prop(), and significance testing for change over time.\"\ndate: 2026-09-11\n---\n\n## What We Did\n\nWe got Census data in NY, calculated moe_pct and classified by confidence, plotted the data in different forms and decorated the plots.\n\n## Key Conceptpoint()\nkey functions: \n  ggplot(data): build a canvas, \n    aes(reorder()): sort\n  aes(x, y): aesthetic mapping, no decorating, \n  slice_head(n): get the first 15, \n  geom_point(), geom_col(), geom_erroebar(aaes(ymin, xmin)): shape of chart,\n  str_remove(col, \"xxx\"): remove the unwanted word\n  labs(title): add axes title\n  coord_flip(): trans\n  \n\n\n::: {.cell}\n\n```{.r .cell-code}\nsessionInfo()$R.version$version.string\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\n[1] \"R version 4.5.3 (2026-03-11)\"\n```\n\n\n:::\n:::\n\n\n## Reflection\n\n1. Learned more about the meaning of moe_pct and how it reflects the information.\n2. Using plot functions can make the plots more readable.\n\n## Questions I Still Have\n\nHow to precisely define the confidence threshold\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -1,0 +1,241 @@
+---
+title: "assignment-3"
+author: "Qiwen Bian"
+date: 2026-09-16
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Show code"
+    embed-resources: true
+---
+
+## 1. Get ACS data
+Load the packages and define the ACS variables once. Download tract-level ACS 5-year data for Philadelphia County for the 2006–2010 and 2013-2017 period.
+```{r}
+library(tidyverse)
+library(tidycensus)
+
+poverty_vars <- c(
+  below_poverty = "B17001_002",
+  total = "B17001_001"
+)
+
+acs_2010 <- get_acs(
+  geography = "tract",
+  variables = poverty_vars,
+  state = 42,
+  county = 101,
+  year = 2010,
+  survey = "acs5",
+  output = "wide"
+)
+
+acs_2017 <- get_acs(
+  geography = "tract",
+  variables = poverty_vars,
+  state = 42,
+  county = 101,
+  year = 2017,
+  survey = "acs5",
+  output = "wide"
+)
+```
+
+## 2. Compute poverty rate and MOE for both periods, then pivot wide
+Compute the poverty rate and its margin of error for 2006–2010 and 2013-2017 then combine and pivot wide. If `totalE` is missing or zero, set the rate and MOE to `NA` instead of producing invalid values.
+```{r}
+poverty_2010 <- acs_2010 %>%
+  mutate(
+    period = "2006_2010",
+    poverty_rate = below_povertyE / totalE,
+    poverty_rate_moe = moe_prop(
+      below_povertyE,
+      totalE,
+      below_povertyM,
+      totalM
+    )
+  ) %>%
+  mutate(
+    poverty_rate = if_else(totalE > 0, poverty_rate, NA_real_),
+    poverty_rate_moe = if_else(totalE > 0, poverty_rate_moe, NA_real_)
+  ) %>%
+  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe)
+
+poverty_2017 <- acs_2017 %>%
+  mutate(
+    period = "2013_2017",
+    poverty_rate = below_povertyE / totalE,
+    poverty_rate_moe = moe_prop(
+      below_povertyE,
+      totalE,
+      below_povertyM,
+      totalM
+    )
+  ) %>%
+  mutate(
+    poverty_rate = if_else(totalE > 0, poverty_rate, NA_real_),
+    poverty_rate_moe = if_else(totalE > 0, poverty_rate_moe, NA_real_)
+  ) %>%
+  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe)
+
+poverty_change <- bind_rows(
+  poverty_2010,
+  poverty_2017
+)
+
+poverty_wide <- poverty_change %>%
+  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe) %>%
+  pivot_wider(
+    names_from  = period,
+    values_from = c(poverty_rate, poverty_rate_moe)
+  )
+```
+
+
+## 3. Calculate the change and CV
+Calculate the change in poverty rate, the standard error of the difference, the difference MOE, the z-score, and whether the change is statistically detectable at the 90% confidence level. Calculate the coefficient of variation for each period and classify each estimate as reliable, somewhat reliable, or unreliable.
+```{r}
+poverty_tested <- poverty_wide %>%
+  mutate(
+    change   = poverty_rate_2013_2017 -
+               poverty_rate_2006_2010,
+    se_1     = poverty_rate_moe_2006_2010 / 1.645,
+    se_2     = poverty_rate_moe_2013_2017 / 1.645,
+    se_diff  = sqrt(se_1^2 + se_2^2),
+    moe_diff = se_diff * 1.645,
+    z        = change / se_diff,
+    significant = abs(z) > 1.645
+  )
+
+poverty_tested <- poverty_tested %>%
+  mutate(
+    cv_2006_2010 = se_1 / poverty_rate_2006_2010 * 100,
+    cv_2013_2017 = se_2 / poverty_rate_2013_2017 * 100,
+    reliability_2006_2010 = 
+      case_when(
+        cv_2006_2010 < 12 ~ "reliable",
+        cv_2006_2010 <= 40 ~ "somewhat reliable",
+        TRUE ~ "unreliable"
+      ),
+    reliability_2013_2017 = 
+      case_when(
+        cv_2013_2017 < 12 ~ "reliable",
+        cv_2013_2017 <= 40 ~ "somewhat reliable",
+        TRUE ~ "unreliable"
+      )
+  )
+```
+
+## 4. Deal with NA data and report missingness
+Summarize how many tracts have missing changes or missing significance results. This keeps the missing-data step explicit instead of silently dropping observations. Keep only tracts with valid change, valid difference MOE, and a positive standard error of the difference. These are the cases used for the change plot, reliability summaries, and histogram.
+```{r}
+poverty_tested %>%
+  summarise(
+    total_tracts   = n(),
+    missing_change = sum(is.na(change)),
+    missing_moe    = sum(is.na(moe_diff)),
+    missing_z      = sum(is.na(z)),
+    missing_sig    = sum(is.na(significant)),
+    detectable     = sum(significant, na.rm = TRUE),
+    not_detectable = sum(!significant, na.rm = TRUE)
+  )
+
+poverty_complete <- poverty_tested %>%
+  filter(
+    !is.na(change),
+    !is.na(moe_diff),
+    !is.na(se_diff),
+    se_diff > 0
+  )
+```
+
+## 5. Check the result
+```{r}
+poverty_tested %>%
+  select(
+    GEOID, NAME, 
+    poverty_rate_2006_2010,
+    poverty_rate_2013_2017,
+    change, moe_diff, z, significant
+  )
+
+poverty_tested %>%
+  count(significant)
+```
+
+## 6. Plot the change in poverty rate (most unreliable 15)
+Plot the change in poverty rate across Philadelphia census tracts. Error bars show the 90% MOE of the change. Some tracts showed extreme MOE, and the x axis label is horrible!
+```{r}
+poverty_plot <- poverty_complete %>%
+  mutate(
+    change_pp = change * 100,
+    moe_diff_pp = moe_diff * 100,
+    moe_pct = if_else(change == 0, Inf, moe_diff / abs(change) * 100),
+    NAME = str_remove(NAME, "Census Tract ") %>%
+      str_remove(", Philadelphia County, Pennsylvania")
+  ) %>%
+  arrange(desc(moe_pct)) %>%
+  slice_head(n = 15)
+
+ggplot(
+  poverty_plot,
+  aes(x = reorder(NAME, change_pp), y = change_pp)
+) +
+  geom_col(aes(fill = change_pp > 0)) +
+  geom_errorbar(
+    aes(ymin = change_pp - moe_diff_pp,
+        ymax = change_pp + moe_diff_pp),
+    width = 0.3
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    x = NULL,
+    y = "Change in poverty rate (percentage points)",
+    title = "15 most unreliable poverty-rate changes",
+    subtitle = "2013–2017 ACS5 minus 2006–2010 ACS5; error bars show 90% MOE"
+  )
+```
+
+## 7. Summarize reliability
+Create a reliability table for the two periods. Missing reliability values are labeled explicitly as `missing/undefined`.
+```{r}
+reliability_table <- poverty_tested %>%
+  select(
+    GEOID, reliability_2006_2010, reliability_2013_2017
+  ) %>%
+  pivot_longer(
+    cols = c(reliability_2006_2010, reliability_2013_2017),
+    names_to = "period",
+    values_to = "reliability"
+  ) %>%
+  mutate(
+    reliability = replace_na(reliability, "missing/undefined")
+  ) %>%
+  count(period, reliability)
+
+reliability_table
+```
+
+## 8. Plot the distribution of poverty-rate changes
+Plot the distribution of changes across Philadelphia census tracts using complete cases only.
+```{r}
+ggplot(
+  poverty_complete %>%
+    mutate(change_pp = change * 100),
+  aes(x = change_pp)
+) +
+  geom_histogram(bins = 30) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed"
+  ) +
+  labs(
+    x = "Change in poverty rate (percentage points)",
+    y = "Number of census tracts",
+    title = "Distribution of poverty-rate changes across Philadelphia",
+    subtitle = "2013–2017 ACS5 minus 2006–2010 ACS5"
+  ) +
+  theme_minimal()
+```
