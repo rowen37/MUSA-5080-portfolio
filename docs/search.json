@@ -81,7 +81,7 @@
     "href": "assignments/index.html",
     "title": "Assignments",
     "section": "",
-    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nAssignment 2: Who Do We Know the Least About?\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\n\n\nassignment-3\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\nNo matching items"
+    "text": "Completed assignments for MUSA 5080. New assignments appear here automatically once you add the .qmd file to this folder and render.\n\n\n\n\n\n\n\n\n\n\n\nAssignment 3: Verify the Claim\n\n\n\n\n\n\n\n\nSep 16, 2026\n\n\n\n\n\n\n\nAssignment 2: Who Do We Know the Least About?\n\n\n\n\n\n\n\n\nSep 9, 2026\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "about.html",
@@ -226,7 +226,7 @@
   {
     "objectID": "assignments/assignment3.html",
     "href": "assignments/assignment3.html",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "",
     "text": "Load the packages and define the ACS variables once. Download tract-level ACS 5-year data for Philadelphia County for the 2006–2010 and 2013-2017 period.\n\n\nShow code\nlibrary(tidyverse)\nlibrary(tidycensus)\n\npoverty_vars &lt;- c(\n  below_poverty = \"B17001_002\",\n  total = \"B17001_001\"\n)\n\nacs_2010 &lt;- get_acs(\n  geography = \"tract\",\n  variables = poverty_vars,\n  state = 42,\n  county = 101,\n  year = 2010,\n  survey = \"acs5\",\n  output = \"wide\"\n)\n\nacs_2017 &lt;- get_acs(\n  geography = \"tract\",\n  variables = poverty_vars,\n  state = 42,\n  county = 101,\n  year = 2017,\n  survey = \"acs5\",\n  output = \"wide\"\n)"
   },
@@ -296,7 +296,7 @@
   {
     "objectID": "assignments/assignment3.html#deal-with-na-data-and-report-missingness",
     "href": "assignments/assignment3.html#deal-with-na-data-and-report-missingness",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "4. Deal with NA data and report missingness",
     "text": "4. Deal with NA data and report missingness\nSummarize how many tracts have missing changes or missing significance results. This keeps the missing-data step explicit instead of silently dropping observations. Keep only tracts with valid change, valid difference MOE, and a positive standard error of the difference. These are the cases used for the change plot, reliability summaries, and histogram.\n\n\nShow code\npoverty_tested %&gt;%\n  summarise(\n    total_tracts   = n(),\n    missing_change = sum(is.na(change)),\n    missing_moe    = sum(is.na(moe_diff)),\n    missing_z      = sum(is.na(z)),\n    missing_sig    = sum(is.na(significant)),\n    detectable     = sum(significant, na.rm = TRUE),\n    not_detectable = sum(!significant, na.rm = TRUE)\n  )\n\n\n# A tibble: 1 × 7\n  total_tracts missing_change missing_moe missing_z missing_sig detectable\n         &lt;int&gt;          &lt;int&gt;       &lt;int&gt;     &lt;int&gt;       &lt;int&gt;      &lt;int&gt;\n1          384              8           8         8           8         63\n# ℹ 1 more variable: not_detectable &lt;int&gt;\n\n\nShow code\npoverty_complete &lt;- poverty_tested %&gt;%\n  filter(\n    !is.na(change),\n    !is.na(moe_diff),\n    !is.na(se_diff),\n    se_diff &gt; 0\n  )"
   },
@@ -310,7 +310,7 @@
   {
     "objectID": "assignments/assignment3.html#check-the-result",
     "href": "assignments/assignment3.html#check-the-result",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "5. Check the result",
     "text": "5. Check the result\n\n\nShow code\npoverty_tested %&gt;%\n  select(\n    GEOID, NAME, \n    poverty_rate_2006_2010,\n    poverty_rate_2013_2017,\n    change, moe_diff, z, significant\n  )\n\n\n# A tibble: 384 × 8\n   GEOID   NAME  poverty_rate_2006_2010 poverty_rate_2013_2017   change moe_diff\n   &lt;chr&gt;   &lt;chr&gt;                  &lt;dbl&gt;                  &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;\n 1 421010… Cens…                  0.344                  0.347  0.00281   0.159 \n 2 421010… Cens…                  0.332                  0.347  0.0144    0.144 \n 3 421010… Cens…                  0.238                  0.291  0.0529    0.175 \n 4 421010… Cens…                  0.349                  0.337 -0.0126    0.142 \n 5 421010… Cens…                  0.384                  0.455  0.0709    0.171 \n 6 421010… Cens…                  0.215                  0.241  0.0263    0.0993\n 7 421010… Cens…                  0.155                  0.126 -0.0294    0.0995\n 8 421010… Cens…                  0.248                  0.265  0.0170    0.147 \n 9 421010… Cens…                  0.380                  0.435  0.0552    0.240 \n10 421010… Cens…                  0.191                  0.347  0.156     0.145 \n# ℹ 374 more rows\n# ℹ 2 more variables: z &lt;dbl&gt;, significant &lt;lgl&gt;\n\n\nShow code\npoverty_tested %&gt;%\n  count(significant)\n\n\n# A tibble: 3 × 2\n  significant     n\n  &lt;lgl&gt;       &lt;int&gt;\n1 FALSE         313\n2 TRUE           63\n3 NA              8"
   },
@@ -324,14 +324,14 @@
   {
     "objectID": "assignments/assignment3.html#summarize-reliability",
     "href": "assignments/assignment3.html#summarize-reliability",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "7. Summarize reliability",
     "text": "7. Summarize reliability\nCreate a reliability table for the two periods. Missing reliability values are labeled explicitly as missing/undefined.\n\n\nShow code\nreliability_table &lt;- poverty_tested %&gt;%\n  select(\n    GEOID, reliability_2006_2010, reliability_2013_2017\n  ) %&gt;%\n  pivot_longer(\n    cols = c(reliability_2006_2010, reliability_2013_2017),\n    names_to = \"period\",\n    values_to = \"reliability\"\n  ) %&gt;%\n  mutate(\n    reliability = replace_na(reliability, \"missing/undefined\")\n  ) %&gt;%\n  count(period, reliability)\n\nreliability_table\n\n\n# A tibble: 6 × 3\n  period                reliability           n\n  &lt;chr&gt;                 &lt;chr&gt;             &lt;int&gt;\n1 reliability_2006_2010 reliable             11\n2 reliability_2006_2010 somewhat reliable   321\n3 reliability_2006_2010 unreliable           52\n4 reliability_2013_2017 reliable             22\n5 reliability_2013_2017 somewhat reliable   332\n6 reliability_2013_2017 unreliable           30"
   },
   {
     "objectID": "assignments/assignment3.html#plot-the-distribution-of-poverty-rate-changes",
     "href": "assignments/assignment3.html#plot-the-distribution-of-poverty-rate-changes",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "8. Plot the distribution of poverty-rate changes",
     "text": "8. Plot the distribution of poverty-rate changes\nPlot the distribution of changes across Philadelphia census tracts using complete cases only.\n\n\nShow code\nggplot(\n  poverty_complete %&gt;%\n    mutate(change_pp = change * 100),\n  aes(x = change_pp)\n) +\n  geom_histogram(bins = 30) +\n  geom_vline(\n    xintercept = 0,\n    linetype = \"dashed\"\n  ) +\n  labs(\n    x = \"Change in poverty rate (percentage points)\",\n    y = \"Number of census tracts\",\n    title = \"Distribution of poverty-rate changes across Philadelphia\",\n    subtitle = \"2013–2017 ACS5 minus 2006–2010 ACS5\"\n  ) +\n  theme_minimal()"
   },
@@ -380,28 +380,28 @@
   {
     "objectID": "assignments/assignment3.html#get-acs-data",
     "href": "assignments/assignment3.html#get-acs-data",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "",
     "text": "Load the packages and define the ACS variables once. Download tract-level ACS 5-year data for Philadelphia County for the 2006–2010 and 2013-2017 period.\n\n\nShow code\nlibrary(tidyverse)\nlibrary(tidycensus)\n\npoverty_vars &lt;- c(\n  below_poverty = \"B17001_002\",\n  total = \"B17001_001\"\n)\n\nacs_2010 &lt;- get_acs(\n  geography = \"tract\",\n  variables = poverty_vars,\n  state = 42,\n  county = 101,\n  year = 2010,\n  survey = \"acs5\",\n  output = \"wide\"\n)\n\nacs_2017 &lt;- get_acs(\n  geography = \"tract\",\n  variables = poverty_vars,\n  state = 42,\n  county = 101,\n  year = 2017,\n  survey = \"acs5\",\n  output = \"wide\"\n)"
   },
   {
     "objectID": "assignments/assignment3.html#compute-poverty-rate-and-moe-for-both-periods-then-pivot-wide",
     "href": "assignments/assignment3.html#compute-poverty-rate-and-moe-for-both-periods-then-pivot-wide",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "2. Compute poverty rate and MOE for both periods, then pivot wide",
     "text": "2. Compute poverty rate and MOE for both periods, then pivot wide\nCompute the poverty rate and its margin of error for 2006–2010 and 2013-2017 then combine and pivot wide. If totalE is missing or zero, set the rate and MOE to NA instead of producing invalid values.\n\n\nShow code\npoverty_2010 &lt;- acs_2010 %&gt;%\n  mutate(\n    period = \"2006_2010\",\n    poverty_rate = below_povertyE / totalE,\n    poverty_rate_moe = moe_prop(\n      below_povertyE,\n      totalE,\n      below_povertyM,\n      totalM\n    )\n  ) %&gt;%\n  mutate(\n    poverty_rate = if_else(totalE &gt; 0, poverty_rate, NA_real_),\n    poverty_rate_moe = if_else(totalE &gt; 0, poverty_rate_moe, NA_real_)\n  ) %&gt;%\n  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe)\n\npoverty_2017 &lt;- acs_2017 %&gt;%\n  mutate(\n    period = \"2013_2017\",\n    poverty_rate = below_povertyE / totalE,\n    poverty_rate_moe = moe_prop(\n      below_povertyE,\n      totalE,\n      below_povertyM,\n      totalM\n    )\n  ) %&gt;%\n  mutate(\n    poverty_rate = if_else(totalE &gt; 0, poverty_rate, NA_real_),\n    poverty_rate_moe = if_else(totalE &gt; 0, poverty_rate_moe, NA_real_)\n  ) %&gt;%\n  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe)\n\npoverty_change &lt;- bind_rows(\n  poverty_2010,\n  poverty_2017\n)\n\npoverty_wide &lt;- poverty_change %&gt;%\n  select(GEOID, NAME, period, poverty_rate, poverty_rate_moe) %&gt;%\n  pivot_wider(\n    names_from  = period,\n    values_from = c(poverty_rate, poverty_rate_moe)\n  )"
   },
   {
     "objectID": "assignments/assignment3.html#calculate-the-change-and-cv",
     "href": "assignments/assignment3.html#calculate-the-change-and-cv",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "3. Calculate the change and CV",
     "text": "3. Calculate the change and CV\nCalculate the change in poverty rate, the standard error of the difference, the difference MOE, the z-score, and whether the change is statistically detectable at the 90% confidence level. Calculate the coefficient of variation for each period and classify each estimate as reliable, somewhat reliable, or unreliable.\n\n\nShow code\npoverty_tested &lt;- poverty_wide %&gt;%\n  mutate(\n    change   = poverty_rate_2013_2017 -\n               poverty_rate_2006_2010,\n    se_1     = poverty_rate_moe_2006_2010 / 1.645,\n    se_2     = poverty_rate_moe_2013_2017 / 1.645,\n    se_diff  = sqrt(se_1^2 + se_2^2),\n    moe_diff = se_diff * 1.645,\n    z        = change / se_diff,\n    significant = abs(z) &gt; 1.645\n  )\n\npoverty_tested &lt;- poverty_tested %&gt;%\n  mutate(\n    cv_2006_2010 = se_1 / poverty_rate_2006_2010 * 100,\n    cv_2013_2017 = se_2 / poverty_rate_2013_2017 * 100,\n    reliability_2006_2010 = \n      case_when(\n        cv_2006_2010 &lt; 12 ~ \"reliable\",\n        cv_2006_2010 &lt;= 40 ~ \"somewhat reliable\",\n        TRUE ~ \"unreliable\"\n      ),\n    reliability_2013_2017 = \n      case_when(\n        cv_2013_2017 &lt; 12 ~ \"reliable\",\n        cv_2013_2017 &lt;= 40 ~ \"somewhat reliable\",\n        TRUE ~ \"unreliable\"\n      )\n  )"
   },
   {
     "objectID": "assignments/assignment3.html#plot-the-change-in-poverty-rate-most-unreliable-15",
     "href": "assignments/assignment3.html#plot-the-change-in-poverty-rate-most-unreliable-15",
-    "title": "assignment-3",
+    "title": "Assignment 3: Verify the Claim",
     "section": "6. Plot the change in poverty rate (most unreliable 15)",
     "text": "6. Plot the change in poverty rate (most unreliable 15)\nPlot the change in poverty rate across Philadelphia census tracts. Error bars show the 90% MOE of the change. Some tracts showed extreme MOE, and the x axis label is horrible!\n\n\nShow code\npoverty_plot &lt;- poverty_complete %&gt;%\n  mutate(\n    change_pp = change * 100,\n    moe_diff_pp = moe_diff * 100,\n    moe_pct = if_else(change == 0, Inf, moe_diff / abs(change) * 100),\n    NAME = str_remove(NAME, \"Census Tract \") %&gt;%\n      str_remove(\", Philadelphia County, Pennsylvania\")\n  ) %&gt;%\n  arrange(desc(moe_pct)) %&gt;%\n  slice_head(n = 15)\n\nggplot(\n  poverty_plot,\n  aes(x = reorder(NAME, change_pp), y = change_pp)\n) +\n  geom_col(aes(fill = change_pp &gt; 0)) +\n  geom_errorbar(\n    aes(ymin = change_pp - moe_diff_pp,\n        ymax = change_pp + moe_diff_pp),\n    width = 0.3\n  ) +\n  geom_hline(yintercept = 0, linetype = \"dashed\") +\n  theme_minimal() +\n  labs(\n    x = NULL,\n    y = \"Change in poverty rate (percentage points)\",\n    title = \"15 most unreliable poverty-rate changes\",\n    subtitle = \"2013–2017 ACS5 minus 2006–2010 ACS5; error bars show 90% MOE\"\n  )"
   }
