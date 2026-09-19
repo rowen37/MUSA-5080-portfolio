@@ -63,4 +63,4 @@ This lab helped me understand how spatial analysis can answer a practical policy
 
 ## Questions I Still Have
 
-A centroid-based distance measure is simple, but it may not represent how residents actually travel to a station.
+A centroid-based distance measure is simple but it may not represent how residents actually travel to a station.
