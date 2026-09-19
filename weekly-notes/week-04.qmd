@@ -1,0 +1,66 @@
+---
+title: "Week 4: Spatial Data and Indego Access"
+description: "Practice with Philadelphia census tract and Indego station data: CRS transformations, spatial joins, distance calculations, buffers, spatial access definitions, and identifying low-income tracts without station access."
+date: 2026-09-18
+---
+
+## What We Did
+
+1. left.join(tableA, tableB, by="column")  # `left.join` makes wider table with tableA on the left
+
+2. get_acs(... , geometry = TRUE)
+*by the way, the original `get_acs` is:
+  get_acs(
+    geography = "county",
+    variables = "B19013_001",
+    state = 'PA',
+    year = 2023,
+    survey = "acs5"
+  )
+  
+3. Coordinate Reference System (CRS)
+shape, area, distance, direction
+conformal conic (Lambert): ideal for mid-lontitude countries
+cylindrical: ideal for world map
+State Plane Coordinate System: more precise, special to US
+EPSG:4326：WGS84                        degrees
+EPSG:2272: PA Sourthern (state plane)   feets/meters
+EPSG:5070: Albers equal area            meters
+EPSG:4269: NAD83                        degrees
+UTM grid: Mercato(N80 to S80, 60zones)
+
+4. st_crs(data)
+st_set.crs()  # add the crs label to the geometru column
+st_transform(data, 2272)
+
+Judgement functions:
+st_intersects() # any commom point or line
+st_touches()    # touches but no overlapped area inside
+st_within()
+
+Action functions:
+st_filter()     # count the tracts
+st_intersection() # return intersected area
+st_union()      # union two area, return one
+st_join()
+st_distance()   # return a matrix
+
+
+
+## Key Concepts
+
+This lab introduced spatial data analysis in R using sf. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that st_transform() converts coordinates between CRSs, while st_join() matches observations based on location. We also used st_nearest_feature() and st_distance() to measure distance, and st_buffer() to create station service areas. Finally, we combined spatial operations with regular dplyr joins to identify low-income census tracts without access to Indego stations.
+
+
+```{r}
+sessionInfo()$R.version$version.string
+```
+
+## Reflection
+
+This lab helped me understand how spatial analysis can answer a practical policy question rather than simply produce a map. I found the distinction between joining by an attribute such as GEOID and joining by geographic location especially useful. The different definitions of access also showed me that spatial results depend strongly on methodological choices. For example, using a tract centroid, whether a tract touches a station buffer, or the percentage of tract area covered can produce different conclusions. I also learned that checking CRS, row counts, and missing values is important for avoiding misleading results.
+
+
+## Questions I Still Have
+
+A centroid-based distance measure is simple, but it may not represent how residents actually travel to a station.
