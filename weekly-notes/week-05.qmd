@@ -1,20 +1,73 @@
 ---
 title: "Week 5: Intro into machine learning"
-description: ""
+description: "Prediction vs inference: linear regression for prediction. Philadelphia tract rents, residuals, cross-validation, and the in-class modeling challenge."
 date: 2026-09-25
 ---
 
 ## What We Did
 
-m1 
+1. The lab question: a housing agency wants an *expected* rent for every Philadelphia tract.
+   This is a ŷ (y-hat) problem, not a β̂ (beta-hat) problem.
+   ŷ = prediction: guess a number for each row. β̂ = inference: ask why / does X cause Y?
+
+2. get_acs(... , geometry = TRUE) with more variables:
+   med_rent = "B25064_001"   # median gross rent (our Y)
+   med_inc  = "B19013_001"   # median household income
+   renter_occ, occ_units, education variables (ba, ma, prof, phd)
+
+3. Build variables with mutate():
+   pct_renter = renter_occE / occ_unitsE * 100
+   pct_ba     = (baE + maE + profE + phdE) / total_popE * 100
+   rent_se    = med_rentM / 1.645        # standard error from margin of error
+   rent_cv    = rent_se / med_rentE * 100 # coefficient of variation: how noisy is one estimate?
+
+4. Count Indego stations within half a mile of each tract (Week 4 tools):
+   st_is_within_distance(tracts, stations, dist = 0.5)  # returns a list, one element per tract
+   lengths(...)  # turns the list into a plain numeric vector: n_stations
+
+5. Drop rows with missing Y or X yourself, on purpose:
+   filter(total_popE > 0, !is.na(med_rentE), !is.na(med_incE), ...)
+   # R drops them quietly otherwise, and then residuals won't line up with tracts.
+
+6. Plot before modeling:
+   ggplot(tracts, aes(x = med_incE, y = med_rentE)) + geom_point() + geom_smooth(method = "lm")
+   # "Fits" means dots sit close to a straight line, NOT that rent equals income in value.
+
+7. Fit m1: lm(med_rentE ~ med_incE)
+   rent = intercept + coefficient × income + residual
+   coef ≈ 0.008 → +$10,000 income predicts about +$80 rent per month. Small effect.
+   Tiny p-value does NOT mean the effect is big. p-value is about β̂ (is it real?).
+
+8. Fit m2: lm(med_rentE ~ med_incE + pct_renter + pct_ba + n_stations)
+   Read one coefficient two ways:
+   - β̂ reading: bike stations don't "raise" rents; the coefficient soaks up neighborhood character (multicollinearity), so no causal claim.
+   - ŷ reading: keep the variable if it helps guess rent on new tracts.
+
+9. Check survey noise: plot abs(residual) vs rent_cv.
+   Big miss + high CV = maybe survey noise, not model failure. Don't trust those tracts.
+
+10. Train/test split (80/20), then 10-fold cross-validation with caret:
+    trainControl(method = "cv", number = 10); train(..., method = "lm", trControl = ctrl)
+    # set.seed(5080) before each train() so every model gets the same folds: fair comparison.
+    # The grade is CV RMSE: average miss in dollars on data the model never saw. Lower = better.
+    # R² always rises when you add variables, so it can never tell you the new variables truly help.
+
+11. Where is the model wrong? Residuals vs fitted + bptest(m2); map residuals with geom_sf().
+    Red = rent higher than predicted. Errors cluster (University City, Northeast): the model is missing something about those places.
+
+12. Challenge: build the best rent prediction model. Lowest CV RMSE wins.
+    Rule: no leakage — cannot use anything built from rent itself (med_rentM, rent_cv, rent burden...).
+    Deliver: CV RMSE in dollars, one new feature + why, one coefficient read twice, top-5 tracts with rent far above prediction (with rent CV: trust or fog?), residual map.
 
 ## Key Concepts
 
+This lab was an introduction to machine learning for prediction, using linear regression. The core distinction is prediction (ŷ) versus inference (β̂): prediction asks "what will Y be for a new row," while inference asks "does X cause Y and by how much." The same coefficient gets read two different ways depending on the task. For grading a prediction model we use out-of-sample error: split the data into train and test sets, or better, use k-fold cross-validation, and report RMSE — the typical miss in dollars on unseen data. In-sample R² always improves when variables are added, so it cannot judge whether new variables truly help; CV RMSE can get worse, which makes it the honest grade. I also learned that our Y itself is noisy: ACS rent estimates carry margins of error, and a large residual in a high-CV tract may be survey fog rather than signal. Finally, mapping residuals showed that errors are not random in space — they cluster — which means the model is missing real spatial structure.
 
 
 ## Reflection
 
-
+This lab changed how I read regression output. Before, I thought a significant p-value meant a variable was "good." Now I see the p-value answers the inference question, while prediction is graded by CV RMSE on data the model has never seen — and a variable can fail the first test but pass the second. Plotting the residuals on a map was the most surprising part: the red clusters made it obvious that the model doesn't know something about University City and the Northeast, and no table of coefficients shows that as clearly. The hardest part is letting go of causal language: it feels natural to say "stations raise rents," but for this task all that matters is whether the variable helps the guess.
 
 ## Questions I Still Have
 
+If CV RMSE is the only grade for prediction, when would I ever care about R² again? And how do I decide how much survey noise is "too much" before I stop trusting a tract's residual?
