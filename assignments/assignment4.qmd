@@ -1,7 +1,7 @@
 ---
 title: "Assignment: Building Features, Watching What Happens"
 subtitle: "MUSA 5080 · Integrates Weeks 1–5 · Due Friday, October 16"
-author: "YOUR NAME"
+author: "Qiwen Bian"
 format:
   html:
     toc: true
@@ -34,10 +34,12 @@ You'll:
 ::: {.callout-important}
 ## 1. Don't drop rows
 Every model is cross-validated on the same tracts with the same folds, so the rows in your model log are comparable. If a new variable has missing values, fill them (for example, 0 for a count, or the median with a note) or choose a different variable. The `cv_rmse()` helper below will stop and tell you if you break this rule.
-
+:::
+::: {.callout-important}
 ## 2. Stay inside the time window
 Your outcome comes from the 2019–2023 ACS. Pull open data from **2023 or earlier** (2021–2023 is ideal). Using 2025 data to predict a 2023 outcome uses information from the future, which a real prediction model would never have.
-
+:::
+::: {.callout-important}
 ## 3. No leakage
 Don't use any variable that's built from your outcome or measures the same thing another way. Ask yourself: *would an agency trying to predict this outcome for a tract have this variable?* If the answer is "only because it's basically the outcome," leave it out.
 :::
@@ -123,14 +125,19 @@ philly_tracts <- get_acs(
   variables = c(
     total_pop = "B01003_001",
     # your outcome's numerator and denominator (or median), e.g.:
-    # ___ = "___",
-    # ___ = "___",
+    vehicle_hh = "B08201_001",
+    no_vehicle = "B08201_002",
     # your baseline predictors, e.g.:
-    # ___ = "___"
+    median_income = "B19013_001",
+    poverty_den = "B17001_001",
+    poverty_num = "B17001_002",
+    tenure_total = "B25003_001",
+    renter = "B25003_003"
   ),
   year = 2023,
   output = "wide",
-  geometry = TRUE
+  geometry = TRUE,
+  progress_bar = FALSE
 ) %>%
   st_transform(2272)
 ```
@@ -140,13 +147,34 @@ philly_tracts <- get_acs(
 philly_tracts <- philly_tracts %>%
   mutate(
     # build your outcome, e.g. a percentage:
-    # y = ___E / ___E * 100,
+    y = no_vehicleE / vehicle_hhE * 100,
+    
     # and its reliability. For a percentage, use tidycensus::moe_prop();
     # for a median or count, use the E and M columns directly.
-    # y_moe = ___,
-    # y_cv  = (y_moe / 1.645) / y * 100
+    y_moe = tidycensus::moe_prop(
+      num = no_vehicleE,
+      denom = vehicle_hhE,
+      moe_num = no_vehicleM,
+      moe_denom = vehicle_hhM
+    ) * 100,
+    
+    # coefficient of variation
+    y_cv  = if_else(
+      y > 0,
+      (y_moe / 1.645) / y * 100,
+      NA_real_
+    ),
+    
     # your predictors:
-    # ___ = ___
+    poverty_pct = poverty_numE / poverty_denE *100,
+    renter_pct = renterE / tenure_totalE * 100,
+    
+    reliability = case_when(
+      is.na(y_cv) ~ "Missing",
+      y_cv < 12 ~ "High",
+      y_cv <= 40 ~ "Moderate",
+      TRUE ~ "Low"
+    )
   )
 ```
 
@@ -163,11 +191,6 @@ sum(is.na(philly_tracts$y))
 summary(philly_tracts$y_cv)
 
 philly_tracts %>%
-  mutate(reliability = case_when(
-    y_cv < 12  ~ "High",
-    y_cv <= 40 ~ "Moderate",
-    TRUE       ~ "Low"
-  )) %>%
   st_drop_geometry() %>%
   count(reliability)
 
@@ -181,7 +204,7 @@ If more than about a third of tracts have low reliability, consider a different 
 
 **Answer (2–3 sentences):** What is your outcome, why would an agency want to predict it, and how reliable is it?
 
-*Your answer:*
+*Your answer:* My outcome is the percentage of households with no vehicle in each Philadelphia census tract. A transportation or planning agency might want to predict this outcome to identify neighborhoods where reliable transit and other non-car travel options are especially important. Among the original tracts, 29 estimates had high reliability, 313 had moderate reliability, 45 had low reliability, and 21 were missing, so the outcome is reliable enough to model.
 
 ### 1C: Decide which tracts to model
 
@@ -191,8 +214,15 @@ Filter once, here, and never again. Every later step uses `tracts`.
 #| label: filter
 tracts <- philly_tracts %>%
   filter(total_popE > 0,
-         !is.na(y)
+         !is.na(y),
          # add !is.na() for each baseline predictor like in the in-class lab
+         vehicle_hhE > 0,
+         poverty_denE > 0,
+         tenure_totalE > 0,
+         !is.na(y_cv),
+         !is.na(median_incomeE),
+         !is.na(poverty_pct),
+         !is.na(renter_pct)
          )
 
 nrow(philly_tracts)
@@ -201,7 +231,7 @@ nrow(tracts)
 
 **Answer:** How many tracts did you lose, and what kinds of places are they?
 
-*Your answer:*
+*Your answer:* I began with 408 census tracts and retained 381, so 27 tracts were excluded. Most excluded tracts had zero population or no regular households, including several special-purpose 9800-series tracts; a smaller number had missing household-income estimates. These places therefore do not represent ordinary residential neighborhoods for which all model variables can be measured.
 
 ---
 
@@ -214,15 +244,43 @@ Plot your outcome against each predictor before modeling (the Week 3 habit).
 ```{r}
 #| label: look
 # one scatterplot per predictor, e.g.:
-# ggplot(tracts, aes(x = ___, y = y)) + geom_point(alpha = 0.5) +
-#   geom_smooth(method = "lm", se = FALSE) + theme_minimal()
+ggplot(tracts, aes(x = median_incomeE, y = y)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + 
+  theme_minimal() +
+  labs(
+    title = "No-vehicle households and median income",
+    x = "Median household income ($)",
+    y = "Households with no vehicle (%)"
+  )
+
+ggplot(tracts, aes(x = poverty_pct, y = y)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  theme_minimal() +
+  labs(
+    title = "No-vehicle households and poverty",
+    x = "People below poverty (%)",
+    y = "Households with no vehicle (%)"
+  )
+
+ggplot(tracts, aes(x = renter_pct, y = y)) + 
+  geom_point(alpha = 0.5) + 
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  theme_minimal() +
+  labs(
+    title = "No-vehicle households and renting",
+    x = "Renter-occupied housing units (%)",
+    y = "Households with no vehicle (%)"
+  )
+
 ```
 
 ### 2B: Fit and log
 
 ```{r}
 #| label: m1
-f1 <- y ~ ___ + ___ + ___
+f1 <- y ~ median_incomeE + poverty_pct + renter_pct
 
 m1 <- lm(f1, data = tracts)
 summary(m1)
@@ -230,12 +288,16 @@ summary(m1)
 model_log <- model_log %>%
   add_row(model = "m1", added = "ACS baseline",
           cv_rmse = cv_rmse(f1, tracts),
-          notes = "___")
+          notes = "Median income, poverty rate, and renter share")
 
 model_log
 ```
 
-Write the CV RMSE as a sentence, in your outcome's units: "On tracts it hasn't seen, the baseline model misses by about ___."
+**Answer:** Write the CV RMSE as a sentence, in your outcome's units: "On tracts it hasn't seen, the baseline model misses by about 11.9 percentage points."
+
+*Your answer:* On tracts it hasn't seen, the baseline model misses by about 
+11.9 percentage points — if the model predicts 25% of households without a 
+vehicle, the actual value is typically somewhere between roughly 13% and 37%.
 
 ### 2C: Where is the baseline wrong?
 
@@ -256,7 +318,7 @@ ggplot(tracts) +
 
 **Answer:** Where do the residuals cluster? What might those places have in common that your model doesn't know about? **Use this answer to choose your open data layers in Part 3.**
 
-*Your answer:*
+*Your answer:* Positive residuals cluster in and around the central and south-central parts of Philadelphia, while negative residuals are more scattered across outer areas. The baseline model may be missing differences in transit access, urban intensity, walkability, and neighborhood conditions. I therefore chose transit-station access and residential burglary intensity as additional spatial measures.
 
 ---
 
@@ -313,6 +375,14 @@ burglary <- carto_get(
 ) %>%
   st_transform(st_crs(tracts))    # Carto returns EPSG 4326; translate immediately
 
+n_burglary_before <- nrow(burglary)
+n_missing_geometry <- sum(st_is_empty(burglary))
+
+burglary <- burglary %>%
+  filter(!st_is_empty(.))
+
+n_burglary_before
+n_missing_geometry
 nrow(burglary)
 ```
 
@@ -343,19 +413,70 @@ Pull **at least two layers** that you think relate to your outcome. Base your ch
 
 ```{r}
 #| label: my-layers
-layer1 <- carto_get(
-  "SELECT the_geom, ___
-   FROM ___
-   WHERE ___"
+burglary_2023 <- carto_get(
+  "SELECT the_geom, text_general_code, dispatch_date
+   FROM incidents_part1_part2
+   WHERE dispatch_date >= '2023-01-01'
+     AND dispatch_date < '2024-01-01'
+     AND text_general_code = 'Burglary Residential'"
 ) %>%
-  st_transform(st_crs(tracts))
+  st_transform(st_crs(tracts)) %>%
+  filter(!st_is_empty(.))
 
-layer2 <- ___
+trolley <- st_read(
+  paste0(
+    "https://opendata.arcgis.com/api/v3/datasets/",
+    "dd2afb618d804100867dfe0669383159_0/downloads/data",
+    "?format=geojson&spatialRefId=4326"
+  ),
+  quiet = TRUE
+) %>%
+  transmute(
+    station_name = StopName,
+    system = "Trolley"
+  )
+
+regional_rail <- st_read(
+  paste0(
+    "https://opendata.arcgis.com/api/v3/datasets/",
+    "cf49c62fbc17430aa818e900556d207e_0/downloads/data",
+    "?format=geojson&spatialRefId=4326"
+  ),
+  quiet = TRUE
+) %>%
+  transmute(
+    station_name = Station_Na,
+    system = "Regional rail"
+  )
+
+rapid_transit <- st_read(
+  paste0(
+    "https://opendata.arcgis.com/api/v3/datasets/",
+    "af52d74b872045d0abb4a6bbbb249453_0/downloads/data",
+    "?format=geojson&spatialRefId=4326"
+  ),
+  quiet = TRUE
+) %>%
+  transmute(
+    station_name = Station,
+    system = "High speed"
+  )
+
+septa_stations <- bind_rows(
+  trolley,
+  regional_rail,
+  rapid_transit
+) %>%
+  st_transform(st_crs(tracts)) %>%
+  st_filter(st_union(tracts)) %>%
+  filter(!st_is_empty(.))
+
+nrow(septa_stations)
 ```
 
 **Answer:** Why these layers? What do you expect them to capture that the ACS variables don't?
 
-*Your answer:*
+*Your answer:* I selected residential burglaries and 2023 SEPTA station locations. Burglary intensity may capture aspects of neighborhood activity, land use, and concentrated urban conditions that are not fully represented by ACS socioeconomic variables. Station locations measure access to fixed-route public transportation, which may allow households to live without a private vehicle.
 
 ---
 
@@ -370,7 +491,7 @@ How many burglaries fall in each tract?
 ```{r}
 #| label: count
 tracts <- tracts %>%
-  mutate(n_burglary = lengths(st_intersects(., burglary)))
+  mutate(n_burglary = lengths(st_intersects(., burglary_2023)))
 
 summary(tracts$n_burglary)
 ```
@@ -433,23 +554,72 @@ Build **at least three spatial features** from your own layers, and use at least
 
 ```{r}
 #| label: my-spatial
-tracts <- tracts %>%
-  mutate(___ = ___)
+tract_pts <- st_point_on_surface(tracts)
 
-f2 <- y ~ ___
+nearest_station_idx <- st_nearest_feature(
+  tract_pts,
+  septa_stations
+)
+
+tracts <- tracts %>%
+  mutate(
+    area_sqmi = as.numeric(st_area(.)) / 27878400,
+    n_burglary = lengths(st_intersects(., burglary_2023)),
+    burglary_per_sqmi = n_burglary / area_sqmi,
+    
+    dist_septa_mi = as.numeric(
+      st_distance(
+        tract_pts,
+        septa_stations[nearest_station_idx, ],
+        by_element = TRUE
+      )
+    ) / 5280
+  )
+
+# model 2
+f2 <- y ~ median_incomeE + poverty_pct + renter_pct + n_burglary
+m2 <- lm(f2, data = tracts)
 
 model_log <- model_log %>%
-  add_row(model = "m2", added = "___",
-          cv_rmse = cv_rmse(f2, tracts),
-          notes = "___")
+  add_row(
+    model = "m2", 
+    added = "Residential Burglary count",
+    cv_rmse = cv_rmse(f2, tracts),
+    notes = "Raw count"
+  )
 
 # repeat for each feature
+
+# model 3
+f3 <- y ~ median_incomeE +poverty_pct + renter_pct + burglary_per_sqmi
+m3 <- lm(f3, data = tracts)
+
+model_log <- model_log %>%
+  add_row(
+    model = "m3", 
+    added = "Residential Burglary density",
+    cv_rmse = cv_rmse(f3, tracts),
+    notes = "Burglaries per square mile"
+  )
+
+# model 4
+f4 <- y ~ median_incomeE + poverty_pct + renter_pct + dist_septa_mi
+m4 <- lm(f4, data = tracts)
+
+model_log <- model_log %>%
+  add_row(
+    model = "m4", 
+    added = "Distance to 2023 SEPTA station",
+    cv_rmse = cv_rmse(f4, tracts),
+    notes = "Miles"
+  )
+
 model_log
 ```
 
 **Answer:** Which spatial feature helped most? Did any feature you expected to help do nothing, or make CV RMSE worse? Why might that be?
 
-*Your answer:*
+*Your answer:* Residential burglary density helped the most among the initial spatial features, reducing CV RMSE from approximately 11.94 to 11.22 percentage points. Distance to the nearest 2023 SEPTA station also helped, reducing RMSE to approximately 11.43. The raw burglary count was the most disappointing because it only reduced RMSE to approximately 11.73; raw counts partly measure tract size rather than the intensity of neighborhood conditions.
 
 ---
 
@@ -536,23 +706,100 @@ Try **at least one of each**: a log, a squared term, and a categorical variable.
 
 ```{r}
 #| label: my-transforms
-f_log <- y ~ ___
+tracts <- tracts %>%
+  mutate(
+    log_burglary_density = log1p(burglary_per_sqmi),
+    income_10k = median_incomeE / 10000,
+    station_access = case_when(
+      dist_septa_mi < 0.5 ~ "Near",
+      dist_septa_mi < 1.0 ~ "Middle",
+      TRUE           ~ "Far"
+    ),
+    station_access = factor(
+      station_access, 
+      levels = c("Near", "Middle", "Far")
+    )
+  )
+
+ggplot(tracts, aes(x = burglary_per_sqmi)) + 
+  geom_histogram(bins = 30) + 
+  theme_minimal() + 
+  labs(
+    title = "Raw burglary density",
+    x = "Burglary per square mile",
+    y = "Number of tracts"
+  )
+ggplot(tracts, aes(x = log_burglary_density)) + 
+  geom_histogram(bins = 30) + 
+  theme_minimal() + 
+  labs(
+    title = "Logged burglary density",
+    x = "log(1 + burglary density)",
+    y = "Number of tracts"
+  )
+
+ggplot(tracts, aes(x = income_10k, y = y)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ x + I(x^2), 
+    se = FALSE, 
+    color = "red") +
+  theme_minimal() + 
+  labs(
+    title = "Curved relationship with income",
+    x = "Median household income ($10,000s)",
+    y = "Households with no vehicle (%)"
+  )
+
+tracts %>% st_drop_geometry() %>% count(station_access)
+
+# log -- burglary density
+f_log <- y ~ median_incomeE + poverty_pct + renter_pct + log_burglary_density
+m_log <- lm(f_log, data = tracts)
 
 model_log <- model_log %>%
-  add_row(model = "m_", added = "log of ___",
-          cv_rmse = cv_rmse(f_log, tracts),
-          notes = "___")
+  add_row(
+    model = "m5", 
+    added = "log of burglary density",
+    cv_rmse = cv_rmse(f_log, tracts),
+    notes = "Used log1p because zero is possible"
+  )
 
-# squared term
+# squared term -- income
+f_sq <- y ~ poverty_pct + renter_pct + income_10k + I(income_10k^2)
+m_sq <- lm(f_sq, data = tracts)
 
-# categorical
+model_log <- model_log %>%
+  add_row(
+    model = "m6",
+    added = "Income squared term",
+    cv_rmse = cv_rmse(f_sq, tracts),
+    notes = "Income entered as linear and squared terms"
+  )
+
+# categorical -- septa station
+f_cat <- y ~ median_incomeE + poverty_pct + renter_pct + station_access
+m_cat <- lm(f_cat, data = tracts)
+
+summary(m_cat)
+
+model_log <- model_log %>%
+  add_row(
+    model = "m7",
+    added = "Station-access categories",
+    cv_rmse = cv_rmse(f_cat, tracts),
+    notes = "Near is the reference category"
+  )
+
+coef(m_cat)[c("station_accessMiddle", "station_accessFar")]
 
 model_log
 ```
 
 **Answer:** Which transformation helped most? For your categorical variable, write one sentence reading one of its coefficients correctly, naming the reference level.
 
-*Your answer:*
+*Your answer:* Among the three transformed models, the logged burglary-density model produced the lowest CV RMSE, at approximately 11.32 percentage points. However, the original unlogged burglary density performed slightly better, with an RMSE of approximately 11.22, so the log transformation was not retained in the final model. In the categorical model, holding median household income, poverty rate, and renter share constant, tracts in the “Far” category were predicted to have approximately 8.36 percentage points fewer households without a vehicle than tracts in the “Near” reference category.
 
 ---
 
@@ -562,15 +809,16 @@ Combine the features and transformations that earned their place, **judged by CV
 
 ```{r}
 #| label: final
-f_final <- y ~ ___
+f_final <- y ~ poverty_pct + renter_pct + income_10k + I(income_10k^2) + burglary_per_sqmi + dist_septa_mi
 
 m_final <- lm(f_final, data = tracts)
 summary(m_final)
 
 model_log <- model_log %>%
-  add_row(model = "final", added = "___",
+  add_row(model = "final", 
+          added = "Income curve + burglary density + station distance",
           cv_rmse = cv_rmse(f_final, tracts),
-          notes = "___")
+          notes = "Best tested combination")
 
 model_log
 ```
@@ -590,7 +838,9 @@ ggplot(tracts) +
        fill = "Residual")
 ```
 
-Put your two residual maps side by side, or put them next to each other in the rendered document. Did the clusters from Part 2C shrink? Where did they stay?
+**Answer:** Put your two residual maps side by side, or put them next to each other in the rendered document. Did the clusters from Part 2C shrink? Where did they stay?
+
+*Your answer:* Compared with the baseline residual map, the final model reduces the size of the errors in many parts of Philadelphia, indicating that the spatial features explain some of the original pattern. However, a cluster of positive residuals remains in and around central Philadelphia, where the model continues to underpredict the percentage of households without a vehicle. This suggests that station distance alone does not fully measure the quality, frequency, or usefulness of transit service.
 
 ### Are the biggest misses in the least reliable tracts?
 
@@ -601,6 +851,12 @@ ggplot(tracts, aes(x = y_cv, y = abs(resid_final))) +
   geom_smooth(se = FALSE) +
   labs(x = "CV of your outcome estimate (%)", y = "Size of the miss") +
   theme_minimal()
+
+cor(
+  abs(tracts$resid_final),
+  tracts$y_cv,
+  use = "complete.obs"
+)
 ```
 
 ---
@@ -614,11 +870,12 @@ Answer in prose, drawing on your model log (incorporate our words of the day for
 3. **What's still missing?** Look at your final residual map. Name one thing about those places you'd want to measure next, and where you might get the data.
 4. **How much of the remaining error might be uncertainty or statistical noise?** Use your last plot.
 
-*Your answer:*
+*Your answer:* The baseline model used median household income, poverty rate, and renter share to predict the percentage of households without a vehicle. Its cross-validated RMSE was approximately 11.94 percentage points. Among the spatial features, residential burglary density helped the most, reducing RMSE to approximately 11.22. I do not interpret burglary as causing households to live without vehicles. Instead, its density may capture urban intensity and neighborhood conditions not fully represented by the ACS predictors. The raw burglary count was the most disappointing feature, reducing RMSE only to approximately 11.73. Raw counts are affected by tract size, whereas density is more comparable across tracts. Combining the useful spatial features with a curved income relationship produced the best model, with an RMSE of approximately 10.74.
 
----
+In the final model, the coefficient for renter share was approximately 0.294. The beta interpretation is that, holding poverty, income, burglary density, and distance to a SEPTA station constant, a one-percentage-point increase in renter share is associated with a 0.294-percentage-point increase in the predicted share of households without a vehicle. The y-hat interpretation is that two otherwise similar tracts differing by ten percentage points in renter share are predicted to differ by approximately 2.94 percentage points in their no-vehicle household shares.
 
-## Submitting
+The final residual map shows smaller errors in many areas, but a cluster of underprediction remains around central Philadelphia. A useful next feature would be transit service frequency and job accessibility. Distance to a station does not measure how often service arrives or which destinations can be reached. Historical 2023 SEPTA GTFS schedules could provide these measures.
 
-Render this document to HTML and submit the link on Canvas by Friday, October 16. I'll miss you all terribly while I'm away. Please send letters or correspondences to my office mailbox. 
+Finally, the relationship between outcome CV and absolute final residual was nearly flat, with a correlation of approximately −0.05. This suggests that ACS sampling uncertainty explains little of the remaining error overall. Some residuals may contain statistical noise, but the remaining spatial pattern is more consistent with omitted transportation, land-use, and neighborhood characteristics.
+
 

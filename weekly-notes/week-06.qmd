@@ -1,0 +1,155 @@
+---
+title: "Week 6: Regression Features for Prediction"
+description: "Building a better rent prediction model with Philadelphia census tract data: log transformations, squared terms, categorical variables and factor levels, interactions, and fixed effects, all graded by cross-validated RMSE."
+date: 2026-10-09
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+## What We Did
+
+### Part 0: Setup
+
+1.  Set the chunk option `progress = FALSE` to fold the knitting
+    progress bar.
+2.  Project City Hall into the planar CRS, so distances are calculated
+    correctly at the urban scale:
+
+``` r
+city_hall <- st_sfc(st_point(c(-75.1636, 39.9526)), crs = 4326) %>%
+  st_transform(2272)  # from degrees to meters
+```
+
+3.  Deal with NA before fitting:
+
+``` r
+filter(!is.na(rent), !is.na(income), !is.na(bldg_age), !is.na(pct_renter))
+```
+
+4.  The 10-fold cross-validated RMSE, our honest grade for every model
+    in this lab:
+
+``` r
+cv_rmse <- function(f, data, log_outcome = FALSE) {
+  preds <- numeric(nrow(data))
+  for (k in 1:10) {
+    m <- lm(f, data = data[folds != k, ])           # train on 9 folds
+    p <- predict(m, newdata = data[folds == k, ])   # predict the held-out fold
+    if (log_outcome) p <- exp(p)                    # back to dollars (more on this soon)
+    preds[folds == k] <- p
+  }
+  sqrt(mean((data$rent - preds)^2))
+}
+
+cv_rmse(f0, tracts)  # the baseline model's honest grade
+```
+
+### Part 1: Logs
+
+1.  Why logs? Skew.
+2.  Log a predictor: `Y = β·log(x)` — a 1% increase in income goes with
+    about β/100 dollars more rent, holding the other variables constant.
+
+``` r
+log1p(x)  # deal with x = 0
+```
+
+3.  Log the outcome: `log(y) = β·log(x)` — a 1% increase in income goes
+    with about β% change in rent (an elasticity).
+
+``` r
+cv_rmse(f_logy, tracts, log_outcome = TRUE)
+# exp() the outcome so RMSE is compared in the same scale (dollars)
+```
+
+### Part 2: Squared Terms
+
+1.  Add a squared term:
+
+``` r
+... + bldg_age + I(bldg_age^2)
+```
+
+2.  If the turning point is outside your data, the curve is just
+    bending, not turning.
+
+### Part 3: Categorical Variables
+
+1.  Turn a continuous distance into an ordered factor:
+
+``` r
+tracts <- tracts %>%
+  mutate(
+    ring = case_when(
+      dist_ch_mi < 2 ~ "Core",
+      dist_ch_mi < 5 ~ "Inner",
+      TRUE           ~ "Outer"
+    ),
+    ring = factor(ring, levels = c("Core", "Inner", "Outer"))
+  )
+```
+
+2.  Change the reference level:
+
+``` r
+tracts_r <- tracts %>%
+  mutate(ring = relevel(ring, ref = "Outer"))
+# often the largest group or a natural baseline
+```
+
+### Part 4: Interactions
+
+1.  A plain categorical can only shift the line up or down (base). An
+    interaction lets it tilt (delta).
+
+``` r
+# slope in Outer =
+#     log(income)             # base
+#   + log(income):ringOuter   # delta
+```
+
+### Part 5: Fixed Effects
+
+## Key Concepts
+
+This lab was about making the linear model more flexible, one feature at
+a time, and letting cross-validated RMSE judge each addition. Logs
+handle skew: logging a predictor means a 1% change in income goes with
+about β/100 dollars more rent, while logging the outcome too turns the
+coefficient into an elasticity (a β% change), and predictions must be
+exp()'d back to dollars before computing RMSE. Squared terms let the
+relationship bend, but the turning point has to sit inside the data
+range — otherwise the curve is just bending, not turning. Categorical
+predictors enter as dummies against a reference level, and relevel()
+lets me pick a more natural baseline such as the largest group.
+Interactions go further: a plain categorical only shifts the line
+(base), while an interaction lets it tilt (delta), so a group's slope is
+the sum of two coefficients. The same cv_rmse() from Part 0 grades every
+version, with log_outcome = TRUE whenever the outcome was logged, and
+fixed effects extend this dummy-variable idea to many groups at once.
+
+```{r}
+sessionInfo()$R.version$version.string
+```
+
+## Reflection
+
+What stuck with me is how much the interpretation depends on where the
+log goes: β/100 dollars per 1% with only the predictor logged, an
+elasticity when both sides are logged, and dollars again only after
+exp() — the same model read three different ways. Reading an interaction
+as base + delta also made the coefficient table less intimidating,
+because the slope for the Outer ring is not one number but the sum of
+two. The turning-point check is a good guard against over-reading a
+squared term whose vertex sits far outside the sample. The hardest habit
+is restraint: a square, a factor, or an interaction each cost one line
+of code, but only CV RMSE decides whether they stay.
+
+## Questions I Still Have
+
+If relevel() only changes the reference group, the fitted values and CV
+RMSE should not move at all — how do I check that in practice? And for
+fixed effects: are they just dummy variables for many groups, and can
+they soak up so much variation that they hide the variables I actually
+care about?
