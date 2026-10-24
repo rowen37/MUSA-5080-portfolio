@@ -6,6 +6,9 @@ date: 2026-09-18
 
 ## What We Did
 
+<details>
+<summary>Original quick notes (kept)</summary>
+<pre>
 1. left.join(tableA, tableB, by="column")  # `left.join` makes wider table with tableA on the left
 
 2. get_acs(... , geometry = TRUE)
@@ -44,23 +47,109 @@ st_intersection() # return intersected area
 st_union()      # union two area, return one
 st_join()
 st_distance()   # return a matrix
+</pre>
+</details>
 
+1. Attribute join:
 
+```{r}
+#| eval: false
+left_join(tableA, tableB, by = "column")
+```
+
+`left_join()` makes a wider table while keeping every row from `tableA` on the left. This is a join by a shared attribute such as `GEOID`.
+
+2. Downloaded ACS geography:
+
+```{r}
+#| eval: false
+get_acs(..., geometry = TRUE)
+
+# The original get_acs example was:
+get_acs(
+  geography = "county",
+  variables = "B19013_001",
+  state = "PA",
+  year = 2023,
+  survey = "acs5"
+)
+```
+
+An `sf` object is a data frame with an extra `geometry` column. Each row is still one place, so regular `dplyr` functions still work. The geometry column is sticky: use `st_drop_geometry()` when a plain table is needed.
+
+3. Coordinate Reference Systems (CRS) describe shape, area, distance, and direction:
+
+   - Conformal conic (Lambert): useful for mid-latitude countries or regions.
+   - Cylindrical: useful for some world maps.
+   - State Plane Coordinate System: a precise system designed for areas within the United States.
+   - EPSG:4326: WGS84, measured in degrees.
+   - EPSG:2272: NAD83 / Pennsylvania South, measured in US feet.
+   - EPSG:5070: Albers equal area, measured in meters.
+   - EPSG:4269: NAD83, measured in degrees.
+   - UTM grid: a Mercator-based system from about 80°S to 84°N, divided into 60 zones.
+
+For this project, a simple rule is: store or share data in EPSG:4326, but calculate Philadelphia distances and buffers in EPSG:2272.
+
+4. Checked and changed CRS information:
+
+```{r}
+#| eval: false
+st_crs(data)
+st_crs(data)$units
+st_set_crs(data, 2272)   # add or correct a missing CRS label
+st_transform(data, 2272) # convert the coordinates
+```
+
+`st_set_crs()` changes the CRS label without moving the geometry. `st_transform()` actually converts coordinates. Before comparing or measuring two layers, check that they use the same projected CRS and the expected units.
+
+5. Judgment functions:
+
+   - `st_intersects()` — do two shapes share any point or area?
+   - `st_touches()` — do the boundaries touch without overlapping interiors?
+   - `st_within()` — is one shape completely within another?
+
+These functions return relationships. For example, `st_intersects()` returns a list, and `lengths()` can turn that list into a count for each feature.
+
+6. Action functions:
+
+   - `st_filter()` — keep whole features that match a spatial condition.
+   - `st_intersection()` — cut shapes and return the overlapping area.
+   - `st_union()` — combine multiple shapes into one shape.
+   - `st_join()` — join rows according to spatial location.
+   - `st_distance()` — return a matrix of distances between every pair of features.
+   - `st_nearest_feature()` — return the index of the nearest feature.
+   - `st_buffer()` — create an area around a feature using the CRS units.
+
+7. Used three possible definitions of access to Indego stations:
+
+   - The tract centroid is within one-half mile of a station.
+   - The tract touches a station service buffer.
+   - At least a chosen percentage of the tract area is covered by the service zone.
+
+These definitions can produce different results. Choosing a spatial predicate is a policy and analytical decision, not only a technical choice.
+
+8. Checked the results. A station on a tract boundary may be counted twice, while a station outside the tract layer may be counted zero times. Row counts, missing values, CRS, units, and totals should be checked before reporting an answer.
 
 ## Key Concepts
 
-This lab introduced spatial data analysis in R using sf. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that st_transform() converts coordinates between CRSs, while st_join() matches observations based on location. We also used st_nearest_feature() and st_distance() to measure distance, and st_buffer() to create station service areas. Finally, we combined spatial operations with regular dplyr joins to identify low-income census tracts without access to Indego stations.
+This lab introduced spatial data analysis in R using `sf`. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that `st_transform()` converts coordinates between CRSs, while `st_join()` matches observations based on location. We also used `st_nearest_feature()` and `st_distance()` to measure distance, and `st_buffer()` to create station service areas. Finally, we combined spatial operations with regular `dplyr` joins to identify low-income census tracts without access to Indego stations.
 
+The most important workflow is:
 
-```{r}
-sessionInfo()$R.version$version.string
-```
+1. Check the CRS and units.
+2. Transform both layers to the same projected CRS.
+3. Use a spatial join or spatial predicate.
+4. Drop geometry when doing a non-spatial summary.
+5. Join the summary back to the spatial master layer by `GEOID` when it is time to map.
+
+For maps, use a clear title and legend, light boundaries, `theme_void()`, and colors that match the meaning of the data. Sequential colors show low-to-high values; diverging colors require a meaningful midpoint such as zero.
 
 ## Reflection
 
 This lab helped me understand how spatial analysis can answer a practical policy question rather than simply produce a map. I found the distinction between joining by an attribute such as GEOID and joining by geographic location especially useful. The different definitions of access also showed me that spatial results depend strongly on methodological choices. For example, using a tract centroid, whether a tract touches a station buffer, or the percentage of tract area covered can produce different conclusions. I also learned that checking CRS, row counts, and missing values is important for avoiding misleading results.
 
-
 ## Questions I Still Have
 
 A centroid-based distance measure is simple but it may not represent how residents actually travel to a station.
+
+Possible improvements include using the street network, entrances, walking time, barriers, and population distribution within each tract instead of assuming that everyone begins at the centroid.

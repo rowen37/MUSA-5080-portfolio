@@ -1,0 +1,96 @@
+---
+title: "Week 8: LISA and Responsible Modeling"
+description: "Use Local Moran's I to locate spatial error clusters, build spatial features, and think about who is affected by prediction systems."
+date: 2026-10-23
+---
+
+## What We Did
+
+<details>
+<summary>Original quick notes (kept)</summary>
+<pre>
+1. LISA: Local Indicators of Spatial Association (Local Moran’s I/Getis-Ord/Local Geary’s c)
+2. Weight matrix: queen (share a line) / rook (point or line)
+3. local Moran's I: center 1 house at a time and calculate her neighbors' average deviation of residuals
+4. Residual = actual - predicted:
+  High = under predicted, Low = over predicted
+  cluster: HH, LL
+  outlier: HL. LH
+</pre>
+</details>
+
+1. Learned the difference between global and local spatial autocorrelation:
+
+   - Global Moran's I gives one number and asks whether errors cluster overall.
+   - Local Moran's I, a type of LISA, gives one value for every house and shows where errors cluster.
+
+2. Reviewed spatial weights. For polygons, rook neighbors share an edge, while queen neighbors share an edge or a corner. For house points, we used each house's five nearest neighbors and row-standardized weights (`style = "W"`).
+
+3. Used out-of-fold residuals, where each house's prediction comes from a model that did not train on that house. This gives a more honest picture of model error.
+
+4. Calculated Local Moran's I. The basic idea is “my deviation × my neighbors' average deviation,” with scaling:
+
+$$
+I_i = \frac{z_i}{m_2}\sum_j w_{ij}z_j
+$$
+
+```{r}
+#| eval: false
+w_knn <- nb2listw(
+  knn2nb(knearneigh(st_coordinates(sales), k = 5)),
+  style = "W"
+)
+
+local_i <- localmoran_perm(sales$resid, w_knn, nsim = 499)
+```
+
+5. Classified significant observations into four LISA quadrants. Because residual = actual - predicted:
+
+   - **High-High (HH):** the house and its neighbors are under-predicted. This may show a missing local amenity.
+   - **Low-Low (LL):** the house and its neighbors are over-predicted. This may show a missing local disamenity.
+   - **High-Low (HL):** one under-predicted house among over-predicted neighbors.
+   - **Low-High (LH):** one over-predicted house among under-predicted neighbors.
+
+HH and LL are spatial clusters that point toward a place. HL and LH are spatial outliers that may point toward a special house or a data problem.
+
+6. Made a LISA map. For each significant cluster, ask: Where is it? What is there that the model does not know? Can it be measured with open data? The answer can suggest the next model feature.
+
+7. Compared three ways to define “near”:
+
+   - **Buffer count:** number of events within a chosen radius; useful for exposure, but the radius is a choice and many values may be zero.
+   - **Nearest distance:** distance to the single closest event; useful when one nearby facility matters, but one unusual point can control the result.
+   - **kNN mean distance:** average distance to the k closest events; smoother and never zero, but k must be chosen.
+
+Choose a short list of reasonable distances or k values before seeing the results, then use cross-validation RMSE to compare them. These should be features of X, not nearby house prices.
+
+8. Used the model improvement loop:
+
+   1. Fit the model and get out-of-fold residuals.
+   2. Check global Moran's I.
+   3. Use the LISA map to locate clusters.
+   4. Build a feature that could explain a cluster.
+   5. Refit and compare CV RMSE, Moran's I, and the number of clusters.
+
+If a cluster does not shrink, the idea about what was missing may be wrong. That is still useful information.
+
+9. Discussed the RealPage rent-pricing case. The important questions were not only whether the regression was accurate, but also what data entered the model, who acted on its recommendations, whether people could override it, and who paid the cost of its decisions.
+
+## Key Concepts
+
+LISA means Local Indicators of Spatial Association. Global Moran's I tells us whether residuals cluster in general, while Local Moran's I tells us where the clusters and outliers are. A LISA map is therefore a diagnostic and a to-do list for feature building.
+
+Local tests also create a multiple-testing problem because thousands of locations are tested at once, so some clusters may appear by chance. The results should be interpreted with the map, local knowledge, and out-of-sample model performance.
+
+Model quality is not only technical. A model can predict accurately and still cause harm. Three useful questions are:
+
+1. What is in the data, and who supplied it?
+2. Who acts on the prediction, and can they say no?
+3. Who pays when the prediction is wrong—and when it is right?
+
+## Reflection
+
+This lecture helped me understand why one global Moran's I value is not enough. LISA shows the specific neighborhoods where a model repeatedly under-predicts or over-predicts, so it can guide the next spatial feature. I also learned that clusters and outliers suggest different problems: clusters usually point to missing information about place, while outliers may point to an unusual property or a data-quality issue. The RealPage example showed that an accurate model can still be harmful depending on its data, users, incentives, and consequences.
+
+## Questions I Still Have
+
+How sensitive are LISA clusters to the choice of k, the weight matrix, and the significance level? How should multiple local tests be corrected without hiding meaningful small clusters?

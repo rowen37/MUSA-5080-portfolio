@@ -6,9 +6,52 @@ date: 2026-09-04
 
 ## What We Did
 
-Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA. 
+Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the census, and had practice (week2.R), learned about several key functions, analyzed incomes of counties in PA.
+
+1. Loaded `tidyverse` and `tidycensus`, then downloaded 2023 ACS five-year median household income for Pennsylvania counties.
+
+2. Used `dim()`, `glimpse()`, and `head()` to inspect the number of rows, columns, variable types, and first observations.
+
+3. Practiced the main `dplyr` verbs. Each verb takes a rectangular table and returns another table:
+
+   - `filter()` chooses rows.
+   - `select()` chooses columns.
+   - `mutate()` creates or changes columns.
+   - `arrange()` sorts rows; `desc()` sorts in descending order.
+   - `group_by()` and `summarize()` turn many rows into one row per group.
+   - `count()` counts observations in each category.
+
+4. Calculated relative margin of error and saved the result:
+
+```{r}
+#| eval: false
+pa_income <- pa_income %>%
+  mutate(moe_pct = moe / estimate * 100)
+```
+
+`mutate()` only prints a temporary result unless it is assigned back to an object with `<-`.
+
+5. Used `case_when()` to create reliability categories:
+
+```{r}
+#| eval: false
+pa_income <- pa_income %>%
+  mutate(reliability = case_when(
+    moe_pct < 3 ~ "High confidence",
+    moe_pct < 6 ~ "Moderate",
+    TRUE        ~ "Low confidence"
+  ))
+```
+
+The conditions are checked from top to bottom. The final `TRUE` means everything that did not match an earlier condition.
+
+6. Compared long and wide ACS data. With two variables in the default long format, each county has two rows. With `output = "wide"`, each county has one row and the variables appear side by side. In wide ACS data, `E` means estimate and `M` means margin of error.
 
 ## Key Concepts
+
+<details>
+<summary>Original quick notes (kept)</summary>
+<pre>
 1. Common functions:
   filter(input data, arguments),
   arrange(step1, desc(moe_pct)),
@@ -18,17 +61,46 @@ Had a quiz, setup portfolio notes for today, had a lesson about dplyr and the ce
 
 2. Magrittr pipe: %>%
 
-3. The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
+3. The loop: Edit → Save → Render → Commit → Push → wait → refresh
+</pre>
+</details>
 
+1. Common functions:
+
+   - `filter(input_data, arguments)`
+   - `arrange(step1, desc(moe_pct))`
+   - `select(NAME, moe_pct)`
+   - `mutate(new_col = col1 / col2)`
+   - `group_by(county)` followed by `summarize()`
+
+2. Magrittr pipe: `%>%`
+
+The pipe means “and then.” It passes the result from one step into the next step and should go at the end of the line.
 
 ```{r}
-sessionInfo()$R.version$version.string
+#| eval: false
+pa_income %>%
+  filter(moe_pct > 5) %>%
+  arrange(desc(moe_pct)) %>%
+  select(NAME, estimate, moe, moe_pct)
 ```
+
+3. `GEOID` is an identifier, not a quantity. It should stay as character data because converting it to a number removes leading zeros.
+
+4. Margin of error shows uncertainty around an ACS estimate. `moe_pct = moe / estimate * 100` makes uncertainty easier to compare across counties with different income levels. A larger `moe_pct` means the estimate is less precise.
+
+5. `group_by()` plus `summarize()` changes the unit of analysis. Before summarizing, one row may represent one county. After summarizing, one row represents one group of counties.
+
+6. The loop: **Edit → Save → Render → Commit → Push → wait → refresh**
+
+For a practice `.R` script, there is no rendering step, so the shorter loop is **Save → Commit → Push**.
 
 ## Reflection
 
-This practice strengthened my skills in retrieving ACS data with `tidycensus` and manipulating it using `dplyr` verbs: `filter`, `select`, `mutate`, `arrange`, and `group_by`/`summarize`. I computed relative margin of error (`moe_pct`), categorized reliability with `case_when`, and explored long‑to‑wide format conversion. A key caution was treating FIPS codes (`GEOID`) as characters to preserve leading zeros. The pipe workflow enabled a smooth data cleaning and exploration process, reinforcing a practical analytic workflow from acquisition to summarization. 
+This practice strengthened my skills in retrieving ACS data with `tidycensus` and manipulating it using `dplyr` verbs: `filter`, `select`, `mutate`, `arrange`, and `group_by`/`summarize`. I computed relative margin of error (`moe_pct`), categorized reliability with `case_when`, and explored long-to-wide format conversion. A key caution was treating FIPS codes (`GEOID`) as characters to preserve leading zeros. The pipe workflow enabled a smooth data cleaning and exploration process, reinforcing a practical analytic workflow from acquisition to summarization.
 
 ## Questions I Still Have
+
 How can MOE help in Census data analysis, can we map it spatially to support policy decisions？
 
+Yes. MOE can be mapped together with the estimate to show where the data are less reliable. However, a map should clearly distinguish the estimated value from its uncertainty so that readers do not treat an uncertain estimate as exact.

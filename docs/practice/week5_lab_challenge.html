@@ -402,21 +402,21 @@ lm(formula = med_rentE ~ med_incE + pct_renter + pct_ba + n_stations,
 
 Residuals:
     Min      1Q  Median      3Q     Max 
--955.25 -157.65  -15.38  127.37 1692.42 
+-955.07 -157.17  -14.36  127.32 1693.42 
 
 Coefficients:
              Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 7.721e+02  6.505e+01  11.869  &lt; 2e-16 ***
-med_incE    5.582e-03  8.585e-04   6.502 2.55e-10 ***
-pct_renter  1.679e+00  9.025e-01   1.861 0.063574 .  
-pct_ba      4.767e+00  1.358e+00   3.510 0.000503 ***
-n_stations  2.895e+01  1.308e+01   2.213 0.027481 *  
+(Intercept) 7.721e+02  6.511e+01  11.859  &lt; 2e-16 ***
+med_incE    5.581e-03  8.588e-04   6.498 2.62e-10 ***
+pct_renter  1.678e+00  9.042e-01   1.856 0.064206 .  
+pct_ba      4.776e+00  1.359e+00   3.515 0.000494 ***
+n_stations  2.870e+01  1.326e+01   2.164 0.031079 *  
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 Residual standard error: 268.9 on 372 degrees of freedom
-Multiple R-squared:  0.5323,    Adjusted R-squared:  0.5273 
-F-statistic: 105.9 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
+Multiple R-squared:  0.5321,    Adjusted R-squared:  0.527 
+F-statistic: 105.7 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <p>Look at the <code>n_stations</code> coefficient. Answer both questions in one or two sentences each:</p>
@@ -453,7 +453,7 @@ F-statistic: 105.9 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(m2)<span class="sc">$</span>r.squared</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.532319</code></pre>
+<pre><code>[1] 0.5320523</code></pre>
 </div>
 </div>
 <p>Hold on to these numbers. Part 6 asks whether they mean what they seem to.</p>
@@ -525,7 +525,7 @@ F-statistic: 105.9 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">train =</span> rmse_train, <span class="at">test =</span> rmse_test)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   train     test 
-265.1013 283.8366 </code></pre>
+265.2109 283.7892 </code></pre>
 </div>
 </div>
 <p><strong>Stop and look:</strong> Which RMSE is larger? Why would you expect that? In words: “The model’s typical miss on tracts it hasn’t seen is about $283 per month.”</p>
@@ -558,8 +558,8 @@ F-statistic: 105.9 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>cv_m2<span class="sc">$</span>results</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  intercept     RMSE  Rsquared      MAE   RMSESD RsquaredSD    MAESD
-1      TRUE 260.8574 0.5649617 190.3576 77.72979  0.1340309 37.53794</code></pre>
+<pre><code>  intercept     RMSE  Rsquared      MAE  RMSESD RsquaredSD    MAESD
+1      TRUE 261.0597 0.5642592 190.2883 77.6181  0.1337541 37.34277</code></pre>
 </div>
 </div>
 <p>Setting the same seed before each <code>train()</code> gives both models the same folds, so the comparison is fair.</p>
@@ -616,7 +616,7 @@ F-statistic: 105.9 on 4 and 372 DF,  p-value: &lt; 2.2e-16</code></pre>
     studentized Breusch-Pagan test
 
 data:  m2
-BP = 18.251, df = 4, p-value = 0.001102</code></pre>
+BP = 18.257, df = 4, p-value = 0.001099</code></pre>
 </div>
 </div>
 <p><strong>Stop and look:</strong> Random cloud, funnel, or curve? If it’s a funnel, the predictions aren’t biased, but one RMSE hides the fact that the model misses by much more in some tracts. Which tracts?</p>
@@ -794,7 +794,7 @@ BP = 18.251, df = 4, p-value = 0.001102</code></pre>
 <span id="cb32-42"><a href="#cb32-42" aria-hidden="true" tabindex="-1"></a>cv_final<span class="sc">$</span>results          <span class="co"># RMSE = 245.34</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  intercept     RMSE  Rsquared      MAE   RMSESD RsquaredSD    MAESD
-1      TRUE 245.3393 0.6078402 183.4838 58.02913 0.09493803 30.74347</code></pre>
+1      TRUE 246.2272 0.6043838 184.1074 56.82433 0.09280112 29.94178</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># refit on all tracts; the agency's list</span></span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>m_final <span class="ot">&lt;-</span> <span class="fu">lm</span>(med_rentE <span class="sc">~</span> log_inc <span class="sc">*</span> dist_center <span class="sc">+</span> pct_ba <span class="sc">+</span> dist_univ <span class="sc">+</span> dist_station <span class="sc">+</span></span>
@@ -806,11 +806,11 @@ BP = 18.251, df = 4, p-value = 0.001102</code></pre>
 <span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(resid_final, <span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>        GEOID med_rentE resid_final   rent_cv
-1 42101011700      3132   1488.0515 13.528359
-2 42101036902      2979   1446.7648  6.734069
-3 42101022000      2313    676.7304  5.072427
-4 42101033200      1983    571.9788 28.019319
-5 42101008801      2742    566.0743  6.207614</code></pre>
+1 42101011700      3132   1498.5644 13.528359
+2 42101036902      2979   1436.8128  6.734069
+3 42101022000      2313    709.0058  5.072427
+4 42101008801      2742    573.0622  6.207614
+5 42101033200      1983    570.9014 28.019319</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(tracts) <span class="sc">+</span></span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">fill =</span> resid_final), <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>

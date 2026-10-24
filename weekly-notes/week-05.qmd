@@ -26,7 +26,8 @@ editor:
     how noisy is one estimate?
 
 4.  Count Indego stations within half a mile of each tract (Week 4
-    tools): st_is_within_distance(tracts, stations, dist = 0.5) \#
+    tools). In EPSG:2272, the units are US feet, so half a mile is 2,640
+    feet: st_is_within_distance(tracts, stations, dist = 2640) \#
     returns a list, one element per tract lengths(...) \# turns the list
     into a plain numeric vector: n_stations
 

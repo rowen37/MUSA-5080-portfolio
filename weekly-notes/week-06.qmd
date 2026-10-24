@@ -11,14 +11,14 @@ editor:
 
 ### Part 0: Setup
 
-1.  Set the chunk option `progress = FALSE` to fold the knitting
+1.  Set the chunk option `progress = FALSE` to hide the knitting
     progress bar.
 2.  Project City Hall into the planar CRS, so distances are calculated
     correctly at the urban scale:
 
 ``` r
 city_hall <- st_sfc(st_point(c(-75.1636, 39.9526)), crs = 4326) %>%
-  st_transform(2272)  # from degrees to meters
+  st_transform(2272)  # from degrees to US feet
 ```
 
 3.  Deal with NA before fitting:
@@ -111,6 +111,30 @@ tracts_r <- tracts %>%
 
 ### Part 5: Fixed Effects
 
+1.  Fixed effects allow each group, such as a planning district or
+    neighborhood, to have its own intercept. In R, this is implemented
+    by adding a factor to the model:
+
+``` r
+m_fe <- lm(rent ~ log(income) + pct_renter + district, data = tracts)
+```
+
+2.  A factor with *k* groups becomes *k − 1* dummy variables. Each
+    coefficient compares one group with the reference group, holding
+    the other predictors constant.
+
+3.  Fixed effects can improve prediction by capturing unmeasured group
+    characteristics, but they do not explain which neighborhood feature
+    matters. They can also overfit when groups contain very few rows.
+
+4.  Small groups should be combined before cross-validation. Otherwise,
+    a test fold may contain a factor level that the training folds never
+    saw, so the model cannot make a prediction for that level.
+
+5.  As with every other feature, keep fixed effects only when they
+    improve cross-validated RMSE and still allow predictions for new
+    observations.
+
 ## Key Concepts
 
 This lab was about making the linear model more flexible, one feature at
@@ -129,9 +153,6 @@ the sum of two coefficients. The same cv_rmse() from Part 0 grades every
 version, with log_outcome = TRUE whenever the outcome was logged, and
 fixed effects extend this dummy-variable idea to many groups at once.
 
-```{r}
-sessionInfo()$R.version$version.string
-```
 
 ## Reflection
 

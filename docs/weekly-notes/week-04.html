@@ -209,24 +209,141 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="what-we-did" class="level2">
 <h2 class="anchored" data-anchor-id="what-we-did">What We Did</h2>
+<details>
+<summary>
+Original quick notes (kept)
+</summary>
+<pre>1. left.join(tableA, tableB, by="column")  # `left.join` makes wider table with tableA on the left
+
+2. get_acs(... , geometry = TRUE)
+*by the way, the original `get_acs` is:
+  get_acs(
+    geography = "county",
+    variables = "B19013_001",
+    state = 'PA',
+    year = 2023,
+    survey = "acs5"
+  )
+  
+3. Coordinate Reference System (CRS)
+shape, area, distance, direction
+conformal conic (Lambert): ideal for mid-lontitude countries
+cylindrical: ideal for world map
+State Plane Coordinate System: more precise, special to US
+EPSG:4326：WGS84                        degrees
+EPSG:2272: PA Sourthern (state plane)   feets/meters
+EPSG:5070: Albers equal area            meters
+EPSG:4269: NAD83                        degrees
+UTM grid: Mercato(N80 to S80, 60zones)
+
+4. st_crs(data)
+st_set.crs()  # add the crs label to the geometru column
+st_transform(data, 2272)
+
+Judgement functions:
+st_intersects() # any commom point or line
+st_touches()    # touches but no overlapped area inside
+st_within()
+
+Action functions:
+st_filter()     # count the tracts
+st_intersection() # return intersected area
+st_union()      # union two area, return one
+st_join()
+st_distance()   # return a matrix
+</pre>
+</details>
 <ol type="1">
-<li><p>left.join(tableA, tableB, by=“column”) # <code>left.join</code> makes wider table with tableA on the left</p></li>
-<li><p>get_acs(… , geometry = TRUE) *by the way, the original <code>get_acs</code> is: get_acs( geography = “county”, variables = “B19013_001”, state = ‘PA’, year = 2023, survey = “acs5” )</p></li>
-<li><p>Coordinate Reference System (CRS) shape, area, distance, direction conformal conic (Lambert): ideal for mid-lontitude countries cylindrical: ideal for world map State Plane Coordinate System: more precise, special to US EPSG:4326：WGS84 degrees EPSG:2272: PA Sourthern (state plane) feets/meters EPSG:5070: Albers equal area meters EPSG:4269: NAD83 degrees UTM grid: Mercato(N80 to S80, 60zones)</p></li>
-<li><p>st_crs(data) st_set.crs() # add the crs label to the geometru column st_transform(data, 2272)</p></li>
+<li>Attribute join:</li>
 </ol>
-<p>Judgement functions: st_intersects() # any commom point or line st_touches() # touches but no overlapped area inside st_within()</p>
-<p>Action functions: st_filter() # count the tracts st_intersection() # return intersected area st_union() # union two area, return one st_join() st_distance() # return a matrix</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(tableA, tableB, <span class="at">by =</span> <span class="st">"column"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>left_join()</code> makes a wider table while keeping every row from <code>tableA</code> on the left. This is a join by a shared attribute such as <code>GEOID</code>.</p>
+<ol start="2" type="1">
+<li>Downloaded ACS geography:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_acs</span>(..., <span class="at">geometry =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The original get_acs example was:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">get_acs</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography =</span> <span class="st">"county"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">variables =</span> <span class="st">"B19013_001"</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">state =</span> <span class="st">"PA"</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2023</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>An <code>sf</code> object is a data frame with an extra <code>geometry</code> column. Each row is still one place, so regular <code>dplyr</code> functions still work. The geometry column is sticky: use <code>st_drop_geometry()</code> when a plain table is needed.</p>
+<ol start="3" type="1">
+<li><p>Coordinate Reference Systems (CRS) describe shape, area, distance, and direction:</p>
+<ul>
+<li>Conformal conic (Lambert): useful for mid-latitude countries or regions.</li>
+<li>Cylindrical: useful for some world maps.</li>
+<li>State Plane Coordinate System: a precise system designed for areas within the United States.</li>
+<li>EPSG:4326: WGS84, measured in degrees.</li>
+<li>EPSG:2272: NAD83 / Pennsylvania South, measured in US feet.</li>
+<li>EPSG:5070: Albers equal area, measured in meters.</li>
+<li>EPSG:4269: NAD83, measured in degrees.</li>
+<li>UTM grid: a Mercator-based system from about 80°S to 84°N, divided into 60 zones.</li>
+</ul></li>
+</ol>
+<p>For this project, a simple rule is: store or share data in EPSG:4326, but calculate Philadelphia distances and buffers in EPSG:2272.</p>
+<ol start="4" type="1">
+<li>Checked and changed CRS information:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(data)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(data)<span class="sc">$</span>units</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">st_set_crs</span>(data, <span class="dv">2272</span>)   <span class="co"># add or correct a missing CRS label</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">st_transform</span>(data, <span class="dv">2272</span>) <span class="co"># convert the coordinates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>st_set_crs()</code> changes the CRS label without moving the geometry. <code>st_transform()</code> actually converts coordinates. Before comparing or measuring two layers, check that they use the same projected CRS and the expected units.</p>
+<ol start="5" type="1">
+<li><p>Judgment functions:</p>
+<ul>
+<li><code>st_intersects()</code> — do two shapes share any point or area?</li>
+<li><code>st_touches()</code> — do the boundaries touch without overlapping interiors?</li>
+<li><code>st_within()</code> — is one shape completely within another?</li>
+</ul></li>
+</ol>
+<p>These functions return relationships. For example, <code>st_intersects()</code> returns a list, and <code>lengths()</code> can turn that list into a count for each feature.</p>
+<ol start="6" type="1">
+<li><p>Action functions:</p>
+<ul>
+<li><code>st_filter()</code> — keep whole features that match a spatial condition.</li>
+<li><code>st_intersection()</code> — cut shapes and return the overlapping area.</li>
+<li><code>st_union()</code> — combine multiple shapes into one shape.</li>
+<li><code>st_join()</code> — join rows according to spatial location.</li>
+<li><code>st_distance()</code> — return a matrix of distances between every pair of features.</li>
+<li><code>st_nearest_feature()</code> — return the index of the nearest feature.</li>
+<li><code>st_buffer()</code> — create an area around a feature using the CRS units.</li>
+</ul></li>
+<li><p>Used three possible definitions of access to Indego stations:</p>
+<ul>
+<li>The tract centroid is within one-half mile of a station.</li>
+<li>The tract touches a station service buffer.</li>
+<li>At least a chosen percentage of the tract area is covered by the service zone.</li>
+</ul></li>
+</ol>
+<p>These definitions can produce different results. Choosing a spatial predicate is a policy and analytical decision, not only a technical choice.</p>
+<ol start="8" type="1">
+<li>Checked the results. A station on a tract boundary may be counted twice, while a station outside the tract layer may be counted zero times. Row counts, missing values, CRS, units, and totals should be checked before reporting an answer.</li>
+</ol>
 </section>
 <section id="key-concepts" class="level2">
 <h2 class="anchored" data-anchor-id="key-concepts">Key Concepts</h2>
-<p>This lab introduced spatial data analysis in R using sf. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that st_transform() converts coordinates between CRSs, while st_join() matches observations based on location. We also used st_nearest_feature() and st_distance() to measure distance, and st_buffer() to create station service areas. Finally, we combined spatial operations with regular dplyr joins to identify low-income census tracts without access to Indego stations.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "R version 4.5.3 (2026-03-11)"</code></pre>
-</div>
-</div>
+<p>This lab introduced spatial data analysis in R using <code>sf</code>. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that <code>st_transform()</code> converts coordinates between CRSs, while <code>st_join()</code> matches observations based on location. We also used <code>st_nearest_feature()</code> and <code>st_distance()</code> to measure distance, and <code>st_buffer()</code> to create station service areas. Finally, we combined spatial operations with regular <code>dplyr</code> joins to identify low-income census tracts without access to Indego stations.</p>
+<p>The most important workflow is:</p>
+<ol type="1">
+<li>Check the CRS and units.</li>
+<li>Transform both layers to the same projected CRS.</li>
+<li>Use a spatial join or spatial predicate.</li>
+<li>Drop geometry when doing a non-spatial summary.</li>
+<li>Join the summary back to the spatial master layer by <code>GEOID</code> when it is time to map.</li>
+</ol>
+<p>For maps, use a clear title and legend, light boundaries, <code>theme_void()</code>, and colors that match the meaning of the data. Sequential colors show low-to-high values; diverging colors require a meaningful midpoint such as zero.</p>
 </section>
 <section id="reflection" class="level2">
 <h2 class="anchored" data-anchor-id="reflection">Reflection</h2>
@@ -235,6 +352,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="questions-i-still-have" class="level2">
 <h2 class="anchored" data-anchor-id="questions-i-still-have">Questions I Still Have</h2>
 <p>A centroid-based distance measure is simple but it may not represent how residents actually travel to a station.</p>
+<p>Possible improvements include using the street network, entrances, walking time, barriers, and population distribution within each tract instead of assuming that everyone begins at the centroid.</p>
 
 
 <!-- -->
@@ -693,72 +811,161 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
   });
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 4: Spatial Data and Indego Access"</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Practice with Philadelphia census tract and Indego station data: CRS transformations, spatial joins, distance calculations, buffers, spatial access definitions, and identifying low-income tracts without station access."</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-09-18</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>left.join(tableA, tableB, by="column")  # <span class="in">`left.join`</span> makes wider table with tableA on the left</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>get_acs(... , geometry = TRUE)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>*by the way, the original <span class="in">`get_acs`</span> is:</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  get_acs(</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    geography = "county",</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    variables = "B19013_001",</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    state = 'PA',</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    year = 2023,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    survey = "acs5"</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Coordinate Reference System (CRS)</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>shape, area, distance, direction</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>conformal conic (Lambert): ideal for mid-lontitude countries</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>cylindrical: ideal for world map</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>State Plane Coordinate System: more precise, special to US</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>EPSG:4326：WGS84                        degrees</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:2272:</span> PA Sourthern (state plane)   feets/meters</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:5070:</span> Albers equal area            meters</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:4269:</span> NAD83                        degrees</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>UTM grid: Mercato(N80 to S80, 60zones)</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>st_crs(data)</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>st_set.crs()  # add the crs label to the geometru column</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>st_transform(data, 2272)</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>Judgement functions:</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>st_intersects() # any commom point or line</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>st_touches()    # touches but no overlapped area inside</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>st_within()</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>Action functions:</span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>st_filter()     # count the tracts</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>st_intersection() # return intersected area</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>st_union()      # union two area, return one</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>st_join()</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>st_distance()   # return a matrix</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>This lab introduced spatial data analysis in R using sf. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that st_transform() converts coordinates between CRSs, while st_join() matches observations based on location. We also used st_nearest_feature() and st_distance() to measure distance, and st_buffer() to create station service areas. Finally, we combined spatial operations with regular dplyr joins to identify low-income census tracts without access to Indego stations.</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()<span class="sc">$</span>R.version<span class="sc">$</span>version.string</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>This lab helped me understand how spatial analysis can answer a practical policy question rather than simply produce a map. I found the distinction between joining by an attribute such as GEOID and joining by geographic location especially useful. The different definitions of access also showed me that spatial results depend strongly on methodological choices. For example, using a tract centroid, whether a tract touches a station buffer, or the percentage of tract area covered can produce different conclusions. I also learned that checking CRS, row counts, and missing values is important for avoiding misleading results.</span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>A centroid-based distance measure is simple but it may not represent how residents actually travel to a station.</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Week 4: Spatial Data and Indego Access"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Practice with Philadelphia census tract and Indego station data: CRS transformations, spatial joins, distance calculations, buffers, spatial access definitions, and identifying low-income tracts without station access."</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> 2026-09-18</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## What We Did</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>Original quick notes (kept)<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">pre</span><span class="dt">&gt;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>left.join(tableA, tableB, by="column")  # <span class="in">`left.join`</span> makes wider table with tableA on the left</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>get_acs(... , geometry = TRUE)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>*by the way, the original <span class="in">`get_acs`</span> is:</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  get_acs(</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    geography = "county",</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    variables = "B19013_001",</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    state = 'PA',</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    year = 2023,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    survey = "acs5"</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Coordinate Reference System (CRS)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>shape, area, distance, direction</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>conformal conic (Lambert): ideal for mid-lontitude countries</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>cylindrical: ideal for world map</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>State Plane Coordinate System: more precise, special to US</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>EPSG:4326：WGS84                        degrees</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:2272:</span> PA Sourthern (state plane)   feets/meters</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:5070:</span> Albers equal area            meters</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>EPSG<span class="sc">:4269:</span> NAD83                        degrees</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>UTM grid: Mercato(N80 to S80, 60zones)</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>st_crs(data)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>st_set.crs()  # add the crs label to the geometru column</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>st_transform(data, 2272)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>Judgement functions:</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>st_intersects() # any commom point or line</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>st_touches()    # touches but no overlapped area inside</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>st_within()</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>Action functions:</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>st_filter()     # count the tracts</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>st_intersection() # return intersected area</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>st_union()      # union two area, return one</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>st_join()</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>st_distance()   # return a matrix</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">pre</span><span class="dt">&gt;</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Attribute join:</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(tableA, tableB, <span class="at">by =</span> <span class="st">"column"</span>)</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a><span class="in">`left_join()`</span> makes a wider table while keeping every row from <span class="in">`tableA`</span> on the left. This is a join by a shared attribute such as <span class="in">`GEOID`</span>.</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Downloaded ACS geography:</span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a><span class="fu">get_acs</span>(..., <span class="at">geometry =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a><span class="co"># The original get_acs example was:</span></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a><span class="fu">get_acs</span>(</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>  <span class="at">geography =</span> <span class="st">"county"</span>,</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>  <span class="at">variables =</span> <span class="st">"B19013_001"</span>,</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>  <span class="at">state =</span> <span class="st">"PA"</span>,</span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2023</span>,</span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span></span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>An <span class="in">`sf`</span> object is a data frame with an extra <span class="in">`geometry`</span> column. Each row is still one place, so regular <span class="in">`dplyr`</span> functions still work. The geometry column is sticky: use <span class="in">`st_drop_geometry()`</span> when a plain table is needed.</span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Coordinate Reference Systems (CRS) describe shape, area, distance, and direction:</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>Conformal conic (Lambert): useful for mid-latitude countries or regions.</span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>Cylindrical: useful for some world maps.</span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>State Plane Coordinate System: a precise system designed for areas within the United States.</span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>EPSG<span class="sc">:4326:</span> WGS84, measured in degrees.</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>EPSG<span class="sc">:2272:</span> NAD83 / Pennsylvania South, measured in US feet.</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>EPSG<span class="sc">:5070:</span> Albers equal area, measured in meters.</span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>EPSG<span class="sc">:4269:</span> NAD83, measured in degrees.</span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>UTM grid: a Mercator-based system from about 80°S to 84°N, divided into 60 zones.</span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>For this project, a simple rule is: store or share data in EPSG:4326, but calculate Philadelphia distances and buffers in EPSG:2272.</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Checked and changed CRS information:</span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(data)</span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(data)<span class="sc">$</span>units</span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a><span class="fu">st_set_crs</span>(data, <span class="dv">2272</span>)   <span class="co"># add or correct a missing CRS label</span></span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a><span class="fu">st_transform</span>(data, <span class="dv">2272</span>) <span class="co"># convert the coordinates</span></span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a><span class="in">`st_set_crs()`</span> changes the CRS label without moving the geometry. <span class="in">`st_transform()`</span> actually converts coordinates. Before comparing or measuring two layers, check that they use the same projected CRS and the expected units.</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Judgment functions:</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_intersects()`</span> — do two shapes share any point or area?</span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_touches()`</span> — do the boundaries touch without overlapping interiors?</span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_within()`</span> — is one shape completely within another?</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>These functions return relationships. For example, <span class="in">`st_intersects()`</span> returns a list, and <span class="in">`lengths()`</span> can turn that list into a count for each feature.</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>Action functions:</span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_filter()`</span> — keep whole features that match a spatial condition.</span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_intersection()`</span> — cut shapes and return the overlapping area.</span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_union()`</span> — combine multiple shapes into one shape.</span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_join()`</span> — join rows according to spatial location.</span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_distance()`</span> — return a matrix of distances between every pair of features.</span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_nearest_feature()`</span> — return the index of the nearest feature.</span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span><span class="in">`st_buffer()`</span> — create an area around a feature using the CRS units.</span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>Used three possible definitions of access to Indego stations:</span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The tract centroid is within one-half mile of a station.</span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The tract touches a station service buffer.</span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>At least a chosen percentage of the tract area is covered by the service zone.</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>These definitions can produce different results. Choosing a spatial predicate is a policy and analytical decision, not only a technical choice.</span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>Checked the results. A station on a tract boundary may be counted twice, while a station outside the tract layer may be counted zero times. Row counts, missing values, CRS, units, and totals should be checked before reporting an answer.</span>
+<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Concepts</span></span>
+<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a>This lab introduced spatial data analysis in R using <span class="in">`sf`</span>. Key concepts included coordinate reference systems (CRS), spatial joins, distance calculations, buffers, spatial filtering, and spatial intersections. I learned that <span class="in">`st_transform()`</span> converts coordinates between CRSs, while <span class="in">`st_join()`</span> matches observations based on location. We also used <span class="in">`st_nearest_feature()`</span> and <span class="in">`st_distance()`</span> to measure distance, and <span class="in">`st_buffer()`</span> to create station service areas. Finally, we combined spatial operations with regular <span class="in">`dplyr`</span> joins to identify low-income census tracts without access to Indego stations.</span>
+<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a>The most important workflow is:</span>
+<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Check the CRS and units.</span>
+<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Transform both layers to the same projected CRS.</span>
+<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Use a spatial join or spatial predicate.</span>
+<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Drop geometry when doing a non-spatial summary.</span>
+<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Join the summary back to the spatial master layer by <span class="in">`GEOID`</span> when it is time to map.</span>
+<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a>For maps, use a clear title and legend, light boundaries, <span class="in">`theme_void()`</span>, and colors that match the meaning of the data. Sequential colors show low-to-high values; diverging colors require a meaningful midpoint such as zero.</span>
+<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reflection</span></span>
+<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a>This lab helped me understand how spatial analysis can answer a practical policy question rather than simply produce a map. I found the distinction between joining by an attribute such as GEOID and joining by geographic location especially useful. The different definitions of access also showed me that spatial results depend strongly on methodological choices. For example, using a tract centroid, whether a tract touches a station buffer, or the percentage of tract area covered can produce different conclusions. I also learned that checking CRS, row counts, and missing values is important for avoiding misleading results.</span>
+<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## Questions I Still Have</span></span>
+<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>A centroid-based distance measure is simple but it may not represent how residents actually travel to a station.</span>
+<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a>Possible improvements include using the street network, entrances, walking time, barriers, and population distribution within each tract instead of assuming that everyone begins at the centroid.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

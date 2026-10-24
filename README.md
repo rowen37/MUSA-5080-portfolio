@@ -1,54 +1,48 @@
-# MUSA 5080 — Student Portfolio Template
+# Qiwen Bian — MUSA 5080 Portfolio
 
-Your portfolio for **Public Policy Analytics**, Fall 2026.
+This repository contains my coursework for **MUSA 5080: Public Policy
+Analytics** at the University of Pennsylvania.
 
-Everything you publish for this course lives here: weekly notes, assignments,
-and your final project. By December it's a public, professional artifact you
-can send to employers.
+**Live portfolio:** <https://rowen37.github.io/MUSA-5080-portfolio/>
 
-**See what you're building toward:** [Dr. Delmelle's example portfolio](https://ecdelmelle.github.io/MUSA-5080-instructor-portolio/)
+## About the portfolio
 
----
+The portfolio documents my work with public-policy and spatial data in R. It
+includes weekly learning notes, reproducible assignments, maps, statistical
+models, and reflections on how analytical choices affect policy conclusions.
 
-## Setup instructions are on Canvas
+Topics covered so far include:
 
-Do not follow setup steps from this file or from anywhere else in this repo.
+- American Community Survey data and margins of error
+- Data manipulation and visualization with `dplyr` and `ggplot2`
+- Spatial data, coordinate reference systems, joins, buffers, and distances
+- Regression, cross-validation, feature engineering, and residual diagnostics
+- Moran's I, LISA, and spatial patterns in model error
+- Fairness, data leakage, and responsible use of predictive models
 
-> **Canvas → Files → `session1_student_handout.md`**
+## Repository structure
 
-That handout is the only current version. 
-
----
-
-## What's in here
-
-```
-index.qmd            your homepage
-about.qmd            about you
-weekly-notes/        one file per week
-assignments/         graded work
-_quarto.yml          site settings (nav, theme)
-docs/                the generated website — never edit
-```
-
-New `.qmd` files added to `weekly-notes/` or `assignments/` appear in your
-navigation automatically. You don't need to edit `_quarto.yml` to add a page.
-
----
-
-## The weekly loop
-
-```
-Edit in RStudio → Save → Render → Commit → Push → wait 2 min → refresh live site
+```text
+index.qmd          Portfolio homepage
+about.qmd          Background and contact information
+weekly-notes/      Weekly course notes
+assignments/       Course assignments and supporting data
+practice/          In-class practice files
+_quarto.yml        Quarto website configuration
+docs/              Rendered website published with GitHub Pages
 ```
 
-Every week, all semester. Save is not render. Render is not push.
+## Build the site
 
----
+Open the project in RStudio and use **Render Website**, or run:
 
-## Getting help
+```bash
+quarto render
+```
 
-- **In class:** ask two neighbors, then raise your hand
-- **Canvas discussion board:** post it — someone else has the same problem
-- **Office hours:** see the syllabus
-- **Email:** delmelle@design.upenn.edu
+Quarto writes the generated website to `docs/`. GitHub Pages publishes the
+site from that directory.
+
+## Tools
+
+R, Quarto, Git, `tidyverse`, `tidycensus`, `sf`, `caret`, and `spdep`.

@@ -1,6 +1,6 @@
 ---
-title: "Week 3: ggplot and more MOEs"
-description: "Practice with tidycensus ACS county data: MOEs, reliability flags, ggplot2 error bars, derived uncertainty with moe_sum()/moe_prop(), and significance testing for change over time."
+title: "Week 3: ggplot and More MOEs"
+description: "Practice with ACS county data: reliability, ggplot2 error bars, derived uncertainty, and testing change over time."
 date: 2026-09-11
 ---
 
@@ -8,7 +8,66 @@ date: 2026-09-11
 
 We got Census data in NY, calculated moe_pct and classified by confidence, plotted the data in different forms and decorated the plots.
 
-## Key Conceptpoint()
+1. Downloaded ACS county data, then calculated relative margin of error:
+
+```{r}
+#| eval: false
+county_data <- county_data %>%
+  mutate(
+    moe_pct = moe / estimate * 100,
+    reliability = case_when(
+      moe_pct < 5  ~ "High confidence",
+      moe_pct < 10 ~ "Moderate",
+      TRUE         ~ "Low confidence"
+    )
+  )
+```
+
+2. Used `ggplot()` to build charts. Variables placed inside `aes()` are mapped to the data. Fixed design choices, such as making every point blue, should normally go outside `aes()`.
+
+```{r}
+#| eval: false
+ggplot(county_data, aes(x = estimate, y = moe_pct)) +
+  geom_point(color = "blue")
+```
+
+3. Added error bars from `estimate - moe` to `estimate + moe`. We used `arrange()` and `slice_head()` to keep the 15 least reliable counties, `reorder()` to sort them, `coord_flip()` to make names readable, and `str_remove()` to shorten labels.
+
+```{r}
+#| eval: false
+county_data %>%
+  arrange(desc(moe_pct)) %>%
+  slice_head(n = 15) %>%
+  mutate(NAME = str_remove(NAME, " County, New York")) %>%
+  ggplot(aes(x = reorder(NAME, estimate), y = estimate)) +
+  geom_col(fill = "steelblue") +
+  geom_errorbar(
+    aes(ymin = estimate - moe, ymax = estimate + moe),
+    width = 0.3
+  ) +
+  coord_flip() +
+  theme_minimal()
+```
+
+4. Calculated uncertainty for derived values:
+
+   - `moe_sum()` calculates the MOE for a combined total. We should not simply add the individual MOEs.
+   - `moe_prop()` calculates the MOE for a proportion using uncertainty from both the numerator and denominator.
+
+5. Compared ACS estimates over time. First convert each 90% MOE to a standard error with `SE = MOE / 1.645`. For two independent estimates:
+
+$$
+SE_{difference} = \sqrt{SE_1^2 + SE_2^2}
+$$
+
+Then calculate `z = change / SE_difference`. At the 90% confidence level, `abs(z) > 1.645` indicates a statistically significant change.
+
+## Key Concepts
+
+<details>
+<summary>Original quick notes (kept)</summary>
+<pre>
+point()
 key functions: 
   ggplot(data): build a canvas, 
     aes(reorder()): sort
@@ -18,18 +77,40 @@ key functions:
   str_remove(col, "xxx"): remove the unwanted word
   labs(title): add axes title
   coord_flip(): trans
-  
+</pre>
+</details>
+
+Corrected function summary:
+
+- `ggplot(data, aes(x, y))` creates the plot and maps variables to visual properties.
+- `geom_point()` draws points; `geom_col()` draws bars.
+- `geom_errorbar(aes(ymin = estimate - moe, ymax = estimate + moe))` shows uncertainty.
+- `reorder(NAME, estimate)` sorts categories by a numeric variable.
+- `slice_head(n = 15)` keeps the first 15 rows.
+- `str_remove()` removes unwanted text from labels.
+- `labs()` adds clear titles and axis labels.
+- `coord_flip()` swaps the axes.
+- `theme_minimal()` reduces unnecessary visual clutter.
+
+Relative MOE and coefficient of variation are related but not identical:
 
 ```{r}
-sessionInfo()$R.version$version.string
+#| eval: false
+moe_pct <- moe / estimate * 100
+cv_pct  <- (moe / 1.645) / estimate * 100
 ```
+
+Both help compare uncertainty across estimates of different sizes. Larger values mean lower reliability.
 
 ## Reflection
 
 1. Learned more about the meaning of moe_pct and how it reflects the information.
 2. Using plot functions can make the plots more readable.
 
+This practice also showed me that uncertainty must be carried through the analysis. When values are added, divided, or compared across time, their margins of error must be combined with the correct formula. A polished chart should show both the estimate and its uncertainty instead of hiding the MOE.
+
 ## Questions I Still Have
 
 How to precisely define the confidence threshold
 
+There is no single threshold that works for every project. The choice should depend on the policy question, geographic scale, sample size, and the cost of making a decision from an uncertain estimate. The threshold should be selected before looking for a preferred result and clearly reported.
