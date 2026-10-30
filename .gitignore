@@ -27,3 +27,6 @@ Thumbs.db
 /.quarto/
 
 **/*.quarto_ipynb
+
+# Local assignment export archives
+/assignments/*.zip

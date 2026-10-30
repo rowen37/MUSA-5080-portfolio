@@ -1,4 +1,6 @@
 ---
+aliases:
+  - /assignments/assignment5.html
 title: "Assignment 5: House Price Prediction, Chicago"
 subtitle: "MUSA 5080 · Team SOS"
 author: "Qiwen Bian, Manching Ho, Fujia Zheng, Lang Tao"

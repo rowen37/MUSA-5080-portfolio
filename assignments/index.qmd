@@ -1,14 +1,11 @@
 ---
 title: "Assignments"
-description: "Graded work for MUSA 5080."
-listing:
-  contents: "*.qmd"
-  sort: "date desc"
-  type: default
-  fields: [title, date, description]
-  sort-ui: false
-  filter-ui: false
+description: "Coursework for MUSA 5080."
 ---
 
-Completed assignments for MUSA 5080. New assignments appear here automatically
-once you add the `.qmd` file to this folder and render.
+Completed course assignments, listed from newest to oldest.
+
+- [Assignment 5: House Price Prediction, Chicago](assignment5/assignment5-code.qmd)
+- [Assignment 4: Building Features, Watching What Happens](assignment4.qmd)
+- [Assignment 3: Verify the Claim](assignment3.qmd)
+- [Assignment 2: Who Do We Know the Least About?](assignment2.qmd)
